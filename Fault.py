@@ -1,4 +1,5 @@
 import qiskit
+import qiskit.circuit.library as Qgate
 import numpy as np
 from copy import deepcopy
 
@@ -37,14 +38,14 @@ class CNOT_variation_fault(Fault):
         description = 'CNOT variation fault at control qubit '+str(index[0])+' and target qubit '+str(index[1])+', parameter:'
         for i in value:
             description += ' '+str(i)
-        super().__init__(index, qiskit.extensions.standard.x.CnotGate, description)
+        super().__init__(index, Qgate.CXGate, description)
         self.value = value
 
     def get_faulty_gate(self, gate_info):
         gate_list = []
-        gate_list.append((qiskit.extensions.standard.u3.U3Gate(self.value[0], self.value[1], self.value[2]),[gate_info[1][0]], []))
+        gate_list.append((Qgate.U3Gate(self.value[0], self.value[1], self.value[2]),[gate_info[1][0]], []))
         gate_list.append(deepcopy(gate_info))
-        gate_list.append((qiskit.extensions.standard.u3.U3Gate(self.value[3], self.value[4], self.value[5]),[gate_info[1][1]], []))
+        gate_list.append((Qgate.U3Gate(self.value[3], self.value[4], self.value[5]),[gate_info[1][1]], []))
 
         return gate_list
 
@@ -63,7 +64,7 @@ class U3_variation_fault(Fault):
         description += ', bias parameter:'
         for i in bias:
             description += ' '+str(i)
-        super().__init__(index, qiskit.extensions.standard.u3.U3Gate, description)
+        super().__init__(index, Qgate.U3Gate, description)
         self.ratio = ratio
         self.bias = bias
         
@@ -86,7 +87,7 @@ class U3_threshold_lopa(Fault):
         for i in threshold:
             description += ' '+str(i)
 
-        super().__init__(index, qiskit.extensions.standard.u3.U3Gate, description)
+        super().__init__(index, Qgate.U3Gate, description)
         self.threshold = threshold
         
     def get_faulty_gate(self, gate_info):
@@ -111,7 +112,7 @@ class U2_variation_fault(Fault):
         description += ', bias parameter:'
         for i in bias:
             description += ' '+str(i) 
-        super().__init__(index, qiskit.extensions.standard.u2.U2Gate, description)
+        super().__init__(index, Qgate.U2Gate, description)
         self.ratio = ratio
         self.bias = bias
         
@@ -131,7 +132,7 @@ class U2_threshold_lopa(Fault):
         description = 'U2 threshold fault at '+str(index[0])+', threshold parameter:'
         for i in threshold:
             description += ' '+str(i)
-        super().__init__(index, qiskit.extensions.standard.u2.U2Gate, description)
+        super().__init__(index, Qgate.U2Gate, description)
         self.threshold = threshold
         
     def get_faulty_gate(self, gate_info):
@@ -155,7 +156,7 @@ class U1_variation_fault(Fault):
         description += ', bias parameter:'
         for i in bias:
             description += ' '+str(i)
-        super().__init__(index, qiskit.extensions.standard.u1.U1Gate, description)
+        super().__init__(index, Qgate.U1Gate, description)
         self.ratio = ratio
         self.bias = bias
         
@@ -173,7 +174,7 @@ class U1_threshold_lopa(Fault):
         description = 'U1 threshold fault at '+str(index[0])+', threshold parameter:'
         for i in threshold:
             description += ' '+str(i)
-        super().__init__(index, qiskit.extensions.standard.u1.U1Gate, description)
+        super().__init__(index, Qgate.U1Gate, description)
         self.threshold = threshold
         
     def get_faulty_gate(self, gate_info):

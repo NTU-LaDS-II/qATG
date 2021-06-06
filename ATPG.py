@@ -4,6 +4,7 @@ import math
 from Fault import *
 from Gate import *
 from scipy.stats import chi2, ncx2
+import qiskit.circuit.library as Qgate
 from qiskit.quantum_info import process_fidelity
 from qiskit.providers.aer.noise import NoiseModel
 from qiskit import execute, Aer
@@ -19,19 +20,6 @@ SEARCH_TIME = 700
 sample_time = 10000
 threshold = 0.01
 r = 0.1
-# def compression(expected_vector, observed_vector, threshold=threshold):
-#     expected_vector_ = []
-#     observed_vector_ = []
-#     for i in range(len(expected_vector)):
-#         if expected_vector[i] >= threshold:
-#             expected_vector_.append(expected_vector[i])
-#             observed_vector_.append(observed_vector[i])
-
-#     expected_vector_.append(1-sum(expected_vector_))
-#     observed_vector_.append(1-sum(observed_vector_))
-#     # print("before", expected_vector, observed_vector)
-#     # print("after", expected_vector, observed_vector)
-#     return np.array(expected_vector_), np.array(observed_vector_)
 
 def compression_forfault(expected_vector, observed_vector, fault_index):
     if not fault_index:
@@ -195,91 +183,6 @@ class Configuration():
                     overkill+=1
                     break
         return overkill/sample_time
-
-    # def cal_testescape(self, expectd_faulty_distribution_list, observed_faulty_distribution_list, alpha):
-    #     testescape_list = []
-    #     for i in range(len(expectd_faulty_distribution_list)):
-    #         testescape = 0
-    #         # print(expectd_faulty_distribution_list[i], observed_faulty_distribution_list[i])
-    #         expected_vector, observed_vector = compression(expectd_faulty_distribution_list[i], observed_faulty_distribution_list[i])
-    #         # expected_vector, observed_vector = expectd_faulty_distribution_list[i], observed_faulty_distribution_list[i]
-    #         # print(expected_vector, observed_vector)
-    #         expected_data = expected_vector * self.max_repetition
-    #         vector_length = len(expected_vector)
-    #         chi_value = chi2.ppf(alpha, vector_length-1)
-
-    #         for _ in range(sample_time):
-    #             observed_sampled_data = random.choices(range(vector_length), weights=observed_vector, cum_weights=None, k=self.max_repetition)
-    #             observed_data = np.zeros(vector_length)
-    #             for d in observed_sampled_data:
-    #                 observed_data[d]+=1
-
-    #             delta_square = np.square(expected_data - observed_data)
-    #             chi_statistic = np.sum(delta_square/(expected_data+INT_MIN))
-    #             if(chi_statistic>chi_value):
-    #                 testescape+=1
-    #         testescape_list.append(testescape/sample_time)
-    #     return testescape_list
-
-    # def cal_overkill(self, faultfree_distribution, faulty_distribution_list, alpha):
-    #     vector_length = len(faultfree_distribution)
-
-    #     expected_data_list = []
-    #     index_data_list = []
-    #     for faultydistribution in faulty_distribution_list:
-    #         temp_list = [] 
-    #         temp_value = 0
-    #         distribution_list = []
-    #         have_value = False
-    #         for i in range(len(faultydistribution)):
-    #             if faultydistribution[i]<threshold:
-    #                 temp_list.append(i)
-    #                 temp_value += faultydistribution[i]
-    #                 have_value = True
-    #             else:
-    #                 distribution_list.append(faultydistribution[i])
-
-    #         if(have_value):
-    #             distribution_list.append(temp_value)
-    #         expected_data_list.append(np.array(distribution_list) * self.max_repetition)
-    #         index_data_list.append(temp_list)
-
-    #     overkill = 0
-    #     for _ in range(sample_time):
-    #         observed_sampled_data = random.choices(range(vector_length), weights=faultfree_distribution, cum_weights=None, k=self.max_repetition)
-    #         observed_data = np.zeros(vector_length)
-    #         for d in observed_sampled_data:
-    #             observed_data[d]+=1
-
-    #         for i in range(len(expected_data_list)):
-    #             temp_data = []
-    #             temp = 0
-    #             have_value = False
-    #             for n in range(vector_length):
-    #                 if n in index_data_list[i]:
-    #                     # print("add:", n)
-    #                     have_value = True
-    #                     temp += observed_data[n]
-    #                 else:
-    #                     # print("append:", n)
-    #                     temp_data.append(observed_data[n])
-    #             if(have_value):
-    #                 # print("append temp:", temp)
-    #                 temp_data.append(temp)
-    #             # if(len(expected_data_list[i]) != len(temp_data)):
-    #             #     print(expected_data_list[i])
-    #             #     print(temp_data)
-    #             #     print(self.max_repetition)
-    #             #     print(observed_data)
-    #             if(len(expected_data_list[i]) != len(temp_data)):
-    #                 print(expected_data_list[i], temp_data, )
-    #             delta_square = np.square(expected_data_list[i] - temp_data)
-    #             chi_value = chi2.ppf(alpha, len(delta_square)-1)
-    #             chi_statistic = np.sum(delta_square/(expected_data_list[i]+INT_MIN))
-    #             if(chi_statistic<=chi_value):
-    #                 overkill+=1
-    #                 break
-    #     return overkill/sample_time
 
     def simulate_real_circuit(self, qc, backend, shots, times, circuit_size=5):
         summantion = {}
@@ -448,16 +351,16 @@ class ATPG():
         if type(index) != list :
             index = [index]
 
-        if(gate_type == qiskit.extensions.standard.u3.U3Gate):
+        if(gate_type == Qgate.U3Gate):
             return (gate_type(parameter[0], parameter[1], parameter[2]), [qiskit.circuit.quantumregister.Qubit(QuantumRegister(self.circuit_size, self.qr_name), index[0])], [])
-        elif(gate_type == qiskit.extensions.standard.u2.U2Gate):
+        elif(gate_type == Qgate.U2Gate):
             return (gate_type(parameter[0], parameter[1]), [qiskit.circuit.quantumregister.Qubit(QuantumRegister(self.circuit_size, self.qr_name), index[0])], [])
-        elif(gate_type == qiskit.extensions.standard.u1.U1Gate):
+        elif(gate_type == Qgate.U1Gate):
             return (gate_type(parameter[0]), [qiskit.circuit.quantumregister.Qubit(QuantumRegister(self.circuit_size, self.qr_name), index[0])], [])
-        elif(gate_type == qiskit.extensions.standard.x.CnotGate):
+        elif(gate_type == Qgate.CXGate):
             return (gate_type(),[qiskit.circuit.quantumregister.Qubit(QuantumRegister(self.circuit_size, self.qr_name), index[0]), 
                             qiskit.circuit.quantumregister.Qubit(QuantumRegister(self.circuit_size, self.qr_name), index[1])], [])
-        elif(gate_type == qiskit.extensions.standard.barrier.Barrier):
+        elif(gate_type == Qgate.Barrier):
             return (gate_type(1), [qiskit.circuit.quantumregister.Qubit(QuantumRegister(self.circuit_size, self.qr_name), index[0])], [])
 
     def get_test_configuration(self, single_fault_list, two_fault_list, initial_state=np.array([1, 0])):
@@ -522,11 +425,11 @@ class ATPG():
 
                         qc_faulty._data.append(self.get_quantum_gate(gate_type=type(template[0][gate_index+1]), index=fault_index[0], parameter=template[0][gate_index+1].params))
                 
-                        qc_faulty._data.append(self.get_quantum_gate(gate_type=qiskit.extensions.standard.barrier.Barrier, index=fault_index[0], parameter=[]))
-                        qc_faulty._data.append(self.get_quantum_gate(gate_type=qiskit.extensions.standard.barrier.Barrier, index=fault_index[1], parameter=[]))
+                        qc_faulty._data.append(self.get_quantum_gate(gate_type=Qgate.Barrier, index=fault_index[0], parameter=[]))
+                        qc_faulty._data.append(self.get_quantum_gate(gate_type=Qgate.Barrier, index=fault_index[1], parameter=[]))
                         qc_faulty._data.append(self.get_quantum_gate(gate_type=type(template[0][gate_index+2]), index=fault_index, parameter=[]))
-                        qc_faulty._data.append(self.get_quantum_gate(gate_type=qiskit.extensions.standard.barrier.Barrier, index=fault_index[0], parameter=[]))
-                        qc_faulty._data.append(self.get_quantum_gate(gate_type=qiskit.extensions.standard.barrier.Barrier, index=fault_index[1], parameter=[]))
+                        qc_faulty._data.append(self.get_quantum_gate(gate_type=Qgate.Barrier, index=fault_index[0], parameter=[]))
+                        qc_faulty._data.append(self.get_quantum_gate(gate_type=Qgate.Barrier, index=fault_index[1], parameter=[]))
 
                         qc_faulty._data.append(self.get_quantum_gate(gate_type=type(template[0][gate_index+3]), index=fault_index[1], parameter=template[0][gate_index+3].params))
                         gate_index += 4
@@ -536,11 +439,11 @@ class ATPG():
                         qc_faulty._data.append(self.get_quantum_gate(gate_type=type(template[1][gate_index][1]), index=fault_index[0], parameter=template[1][gate_index][1].params))                
                         qc_faulty._data.append(self.get_quantum_gate(gate_type=type(template[1][gate_index][0]), index=fault_index[1], parameter=template[1][gate_index][0].params))
                 
-                        qc_faulty._data.append(self.get_quantum_gate(gate_type=qiskit.extensions.standard.barrier.Barrier, index=fault_index[0], parameter=[]))
-                        qc_faulty._data.append(self.get_quantum_gate(gate_type=qiskit.extensions.standard.barrier.Barrier, index=fault_index[1], parameter=[]))
+                        qc_faulty._data.append(self.get_quantum_gate(gate_type=Qgate.Barrier, index=fault_index[0], parameter=[]))
+                        qc_faulty._data.append(self.get_quantum_gate(gate_type=Qgate.Barrier, index=fault_index[1], parameter=[]))
                         qc_faulty._data.append(self.get_quantum_gate(gate_type=type(template[1][gate_index+1]), index=fault_index, parameter=[]))
-                        qc_faulty._data.append(self.get_quantum_gate(gate_type=qiskit.extensions.standard.barrier.Barrier, index=fault_index[0], parameter=[]))
-                        qc_faulty._data.append(self.get_quantum_gate(gate_type=qiskit.extensions.standard.barrier.Barrier, index=fault_index[1], parameter=[]))
+                        qc_faulty._data.append(self.get_quantum_gate(gate_type=Qgate.Barrier, index=fault_index[0], parameter=[]))
+                        qc_faulty._data.append(self.get_quantum_gate(gate_type=Qgate.Barrier, index=fault_index[1], parameter=[]))
                         gate_index += 2
             
             qc_faulty.measure(self.quantumregister, self.classicalregister)
@@ -553,11 +456,11 @@ class ATPG():
                 qc_faultfree._data.append(self.get_quantum_gate(gate_type=type(template[1][gate_index][1]), index=fault.index[0], parameter=template[1][gate_index][1].params))                
                 qc_faultfree._data.append(self.get_quantum_gate(gate_type=type(template[1][gate_index][0]), index=fault.index[1], parameter=template[1][gate_index][0].params))
                 
-                qc_faultfree._data.append(self.get_quantum_gate(gate_type=qiskit.extensions.standard.barrier.Barrier, index=fault.index[0], parameter=[]))
-                qc_faultfree._data.append(self.get_quantum_gate(gate_type=qiskit.extensions.standard.barrier.Barrier, index=fault.index[1], parameter=[]))
+                qc_faultfree._data.append(self.get_quantum_gate(gate_type=Qgate.Barrier, index=fault.index[0], parameter=[]))
+                qc_faultfree._data.append(self.get_quantum_gate(gate_type=Qgate.Barrier, index=fault.index[1], parameter=[]))
                 qc_faultfree._data.append(self.get_quantum_gate(gate_type=type(template[1][gate_index+1]), index=fault.index, parameter=[]))
-                qc_faultfree._data.append(self.get_quantum_gate(gate_type=qiskit.extensions.standard.barrier.Barrier, index=fault.index[0], parameter=[]))
-                qc_faultfree._data.append(self.get_quantum_gate(gate_type=qiskit.extensions.standard.barrier.Barrier, index=fault.index[1], parameter=[]))
+                qc_faultfree._data.append(self.get_quantum_gate(gate_type=Qgate.Barrier, index=fault.index[0], parameter=[]))
+                qc_faultfree._data.append(self.get_quantum_gate(gate_type=Qgate.Barrier, index=fault.index[1], parameter=[]))
             gate_index += 2
         qc_faultfree.measure(self.quantumregister, self.classicalregister)
         # print(length)
@@ -577,13 +480,13 @@ class ATPG():
             qc_faulty = qiskit.QuantumCircuit(self.quantumregister, self.classicalregister)
             for gate in template[0]:
                 qc_faulty._data.append(self.get_quantum_gate(gate_type=type(gate), index=num_circuit, parameter=gate.params))
-                qc_faulty._data.append(self.get_quantum_gate(gate_type=qiskit.extensions.standard.barrier.Barrier, index=num_circuit, parameter=[]))
+                qc_faulty._data.append(self.get_quantum_gate(gate_type=Qgate.Barrier, index=num_circuit, parameter=[]))
 
             for gate in template[1]:
                 for n in range(self.circuit_size):
                     if n != num_circuit:
                         qc_faulty._data.append(self.get_quantum_gate(gate_type=type(gate), index=n, parameter=gate.params))
-                        qc_faulty._data.append(self.get_quantum_gate(gate_type=qiskit.extensions.standard.barrier.Barrier, index=n, parameter=[]))
+                        qc_faulty._data.append(self.get_quantum_gate(gate_type=Qgate.Barrier, index=n, parameter=[]))
 
             qc_faulty.measure(self.quantumregister, self.classicalregister)
             qc_faulty_list.append(qc_faulty)
@@ -593,7 +496,7 @@ class ATPG():
         for gate in template[1]:
             for n in range(self.circuit_size):
                 qc_faultfree._data.append(self.get_quantum_gate(gate_type=type(gate), index=n, parameter=gate.params))
-                qc_faultfree._data.append(self.get_quantum_gate(gate_type=qiskit.extensions.standard.barrier.Barrier, index=n, parameter=[]))
+                qc_faultfree._data.append(self.get_quantum_gate(gate_type=Qgate.Barrier, index=n, parameter=[]))
         qc_faultfree.measure(self.quantumregister, self.classicalregister)
         # print("faultfree")
         # print(qc_faultfree)
@@ -659,12 +562,12 @@ class ATPG():
         parameter_list = [0, 0, 0, 0, 0, 0]
         for i in range(SEARCH_TIME):
             self.two_gradient(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state)
-        faultfree_gate_list.append([qiskit.extensions.standard.u3.U3Gate(parameter_list[0], parameter_list[1], parameter_list[2]), qiskit.extensions.standard.u3.U3Gate(parameter_list[3], parameter_list[4], parameter_list[5])])
-        faultfree_gate_list.append(qiskit.extensions.standard.x.CnotGate())
+        faultfree_gate_list.append([Qgate.U3Gate(parameter_list[0], parameter_list[1], parameter_list[2]), Qgate.U3Gate(parameter_list[3], parameter_list[4], parameter_list[5])])
+        faultfree_gate_list.append(Qgate.CXGate())
         
-        faulty_gate_list.append([qiskit.extensions.standard.u3.U3Gate(parameter_list[0], parameter_list[1], parameter_list[2]), qiskit.extensions.standard.u3.U3Gate(parameter_list[3], parameter_list[4], parameter_list[5])])
+        faulty_gate_list.append([Qgate.U3Gate(parameter_list[0], parameter_list[1], parameter_list[2]), Qgate.U3Gate(parameter_list[3], parameter_list[4], parameter_list[5])])
         faulty_gate_list.append(faulty[0][0])
-        faulty_gate_list.append(qiskit.extensions.standard.x.CnotGate())
+        faulty_gate_list.append(Qgate.CXGate())
         faulty_gate_list.append(faulty[2][0])
 
         faultfree_quantum_state = self.matrix_operation([[U3(parameter_list[0:3]), U3(parameter_list[3:6])], faultfree_matrix], faultfree_quantum_state)
@@ -724,10 +627,10 @@ class ATPG():
         
         # score = self.vector_distance(faultfree_quantum_state, faulty_quantum_state)
         faulty_parameter = self.check_fault(fault, parameter_list)
-        faulty_gate_list.append(qiskit.extensions.standard.u3.U3Gate(faulty_parameter[0], faulty_parameter[1], faulty_parameter[2]))
+        faulty_gate_list.append(Qgate.U3Gate(faulty_parameter[0], faulty_parameter[1], faulty_parameter[2]))
         faulty_gate_list.append(faulty[0][0])
         
-        faultfree_gate_list.append(qiskit.extensions.standard.u3.U3Gate(parameter_list[0], parameter_list[1], parameter_list[2]))
+        faultfree_gate_list.append(Qgate.U3Gate(parameter_list[0], parameter_list[1], parameter_list[2]))
         faultfree_gate_list.append(faultfree[0][0])
         # print(faulty_matrix)
         faultfree_quantum_state = self.matrix_operation([U3(parameter_list), faultfree_matrix], faultfree_quantum_state, max_size=2)
@@ -867,7 +770,7 @@ class ATPG():
                 else:
                     threshold.append(0)
             return self.get_quantum_gate(gate_type=fault.gate_type, index=fault.index, parameter=threshold)
-        elif(type(fault)==qiskit.extensions.standard.x.CnotGate):
+        elif(type(fault)==Qgate.CXGate):
             return self.get_quantum_gate(gate_type=fault.gate_type, index=fault.index, parameter= [])
 
     def simulate_configuration(self, configuration, shots=200000):
