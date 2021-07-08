@@ -250,29 +250,12 @@ class ATPG():
 		self.beta = 0.9999
 		return
 
-	
-	def gat_params_list(i):
-		ratio_list
-		bias_list
-		threshold_list
-		if i == 0:
-		ratio_list = [[1-r]]
-		bias_list = [[r*np.pi]]
-		threshold_list = [[1.5*np.pi]]
-		elif i == 1:
-		ratio_list = [[1-r, 1], [1, 1-r]]
-		bias_list = [[r*np.pi, 0], [0, r*np.pi]]
-		threshold_list = [[1.5*np.pi, 2*np.pi], [2*np.pi, 1.5*np.pi]]
-		else:
-		ratio_list = [[1-r, 1, 1], [1, 1-r, 1], [1, 1, 1-r]]
-		bias_list = [[r*np.pi, 0, 0], [0, r*np.pi, 0], [0, 0, r*np.pi]]
-		threshold_list = [[1.5*np.pi, 2*np.pi, 2*np.pi], [2*np.pi, 1.5*np.pi, 2*np.pi], [2*np.pi, 2*np.pi, 1.5*np.pi]]
-		return ratio_list , bias_list , threshold_list
+
 
 	def gat_params_list(i):
-		ratio_list
-		bias_list
-		threshold_list
+		ratio_list = []
+		bias_list = []
+		threshold_list = []
 		if i == 0:
 			ratio_list = [[1-r]]
 			bias_list = [[r*np.pi]]
@@ -287,7 +270,7 @@ class ATPG():
 			threshold_list = [[1.5*np.pi, 2*np.pi, 2*np.pi], [2*np.pi, 1.5*np.pi, 2*np.pi], [2*np.pi, 2*np.pi, 1.5*np.pi]]
 		return ratio_list , bias_list , threshold_list
 
-		def get_fault_list(self , coupling_map):
+	def get_fault_list(self , coupling_map):
 		single_fault_list = []
 		two_fault_list = []
 
@@ -354,8 +337,7 @@ class ATPG():
 		elif(gate_type == Qgate.U1Gate):
 			return (gate_type(parameter[0]), [qiskit.circuit.quantumregister.Qubit(QuantumRegister(self.circuit_size, self.qr_name), index[0])], [])
 		elif(gate_type == Qgate.CXGate):
-			return (gate_type(),[qiskit.circuit.quantumregister.Qubit(QuantumRegister(self.circuit_size, self.qr_name), index[0]), 
-							qiskit.circuit.quantumregister.Qubit(QuantumRegister(self.circuit_size, self.qr_name), index[1])], [])
+			return (gate_type(),[qiskit.circuit.quantumregister.Qubit(QuantumRegister(self.circuit_size, self.qr_name), index[0]), qiskit.circuit.quantumregister.Qubit(QuantumRegister(self.circuit_size, self.qr_name), index[1])], [])
 		elif(gate_type == Qgate.Barrier):
 			return (gate_type(1), [qiskit.circuit.quantumregister.Qubit(QuantumRegister(self.circuit_size, self.qr_name), index[0])], [])
 
