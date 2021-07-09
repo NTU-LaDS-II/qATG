@@ -51,19 +51,19 @@ class CNOT_variation_fault(Fault):
 ############ U ratio & bias ############      
 #ratio and bias are list and their length depend on which type of gate it is
 class U_variation_fault(Fault):
-	def __init__(self, index, ratio, bias):
+	def __init__(self, index, ratio=[1, 1, 1], bias=[0, 0, 0]):
 		#if(len(ratio)!=3):
 		#    print("size of ratio should be 3")
 		#    exit() 
 		#if(len(bias)!=3):
 		#   print("size of bias should be 3")
 		#    exit() 
-		#description = 'U3 variation fault at '+str(index[0])+', ratio parameter:'
-		#for i in ratio:
-		#    description += ' '+str(i)
-		#description += ', bias parameter:'
-		#for i in bias:
-		#    description += ' '+str(i)
+		description = 'U variation fault at '+str(index[0])+', ratio parameter:'
+		for i in ratio:
+			description += ' '+str(i)
+		description += ', bias parameter:'
+		for i in bias:
+			description += ' '+str(i)
 		super().__init__(index, Qgate.U3Gate, description)
 		self.ratio = ratio
 		self.bias = bias
@@ -71,27 +71,28 @@ class U_variation_fault(Fault):
 		#彈性空間，由ratio的len決定
 	def get_faulty_gate(self , gate_info):
 		faulty_gate = deepcopy(gate_info)
-		for i in range len(ratio):
+		for i in range(len(self.ratio)):
 			faulty_gate[0].params[i] = self.ratio[i]*faulty_gate[0].params[i] + self.bias[i]
 		return [faulty_gate]
 
 
 ############ U low pass ############
 class U_threshold_lopa(Fault):
-	def __init__(self, index, threshold):
+	def __init__(self, index, threshold=[np.pi*2, np.pi*2, np.pi*2]):
 
 		#if(len(threshold)!=3):
 		#    print("size of threshold should be 3")
 		#    exit() 
-		#description = 'U3 threshold fault at '+str(index[0])+', threshold parameter:'
-		#for i in threshold:
-		#    description += ' '+str(i)
+		description = 'U3 threshold fault at '+str(index[0])+', threshold parameter:'
+		for i in threshold:
+			description += ' '+str(i)
 
 		super().__init__(index, Qgate.U3Gate, description)
 		self.threshold = threshold
 		
 	def get_faulty_gate(self, gate_info):
 		faulty_gate = deepcopy(gate_info)
-		for i in len(threshold):
+		for i in range(len(self.threshold)):
 			faulty_gate[0].params[i] = self.threshold[i] if faulty_gate[0].params[i] > self.threshold[i] else faulty_gate[0].params[i]
 		return [faulty_gate]
+		

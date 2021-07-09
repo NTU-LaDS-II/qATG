@@ -1,3 +1,33 @@
+from math import ceil
+import numpy as np
+from copy import deepcopy
+from scipy.stats import chi2, ncx2
+
+INT_MIN = 1E-100
+INT_MAX = 1E15
+SEARCH_TIME = 700
+sample_time = 10000
+threshold = 0.01
+r = 0.1
+
+def get_params_list(i):
+	ratio_list = []
+	bias_list = []
+	threshold_list = []
+	if i == 0:
+		ratio_list = [[1-r]]
+		bias_list = [[r*np.pi]]
+		threshold_list = [[1.5*np.pi]]
+	elif i == 1:
+		ratio_list = [[1-r, 1], [1, 1-r]]
+		bias_list = [[r*np.pi, 0], [0, r*np.pi]]
+		threshold_list = [[1.5*np.pi, 2*np.pi], [2*np.pi, 1.5*np.pi]]
+	else:
+		ratio_list = [[1-r, 1, 1], [1, 1-r, 1], [1, 1, 1-r]]
+		bias_list = [[r*np.pi, 0, 0], [0, r*np.pi, 0], [0, 0, r*np.pi]]
+		threshold_list = [[1.5*np.pi, 2*np.pi, 2*np.pi], [2*np.pi, 1.5*np.pi, 2*np.pi], [2*np.pi, 2*np.pi, 1.5*np.pi]]
+	return ratio_list , bias_list , threshold_list
+
 def compression_forfault(expected_vector, observed_vector, fault_index):
 	if not fault_index:
 		return np.array(expected_vector), np.array(observed_vector)
@@ -59,21 +89,31 @@ def to_np(vector):
 
 	probability = probability/np.sum(probability)
 	return probability
+
+def cal_effect_size(self, expected_vector, observed_vector):
+	delta_square = np.square(expected_vector - observed_vector)
+	effectsize = np.sum(delta_square/(expected_vector+INT_MIN))
+	effectsize = np.sqrt(effectsize)
+	if(effectsize<0.1):
+		# print(effectsize)
+		effectsize = 0.1
+	return effectsize
+
 def compute_repetition(self, faulty_data, faultfree_data, alpha, beta):
 	if faultfree_data.shape != faulty_data.shape:
 		print('input shape not consistency')
 		return
 
 	degree_freedom = faultfree_data.shape[0]-1
-	effect_size = self.cal_effect_size(faulty_data, faultfree_data)
+	effect_size = cal_effect_size(faulty_data, faultfree_data)
 	if(effect_size>0.8):
 		lower_bound_effect_size = 0.8
 	else:
 		lower_bound_effect_size = effect_size
 
-	repetition = chi2.ppf(self.alpha, degree_freedom)/(lower_bound_effect_size**2)
+	repetition = chi2.ppf(alpha, degree_freedom)/(lower_bound_effect_size**2)
 	non_centrality = repetition*(effect_size**2)
-	chi2_value = chi2.ppf(self.alpha, degree_freedom)
+	chi2_value = chi2.ppf(alpha, degree_freedom)
 	non_chi2_value = ncx2.ppf(1-self.beta, degree_freedom, non_centrality)
 	# print(non_chi2_value, chi2_value, repetition, effect_size, non_centrality)
 	# if(chi2_value > non_chi2_value):
@@ -82,8 +122,8 @@ def compute_repetition(self, faulty_data, faultfree_data, alpha, beta):
 		# print(non_chi2_value, chi2_value, repetition)
 		repetition += 1
 		non_centrality = repetition*(effect_size**2)
-		chi2_value = chi2.ppf(self.alpha, degree_freedom)
-		non_chi2_value = ncx2.ppf(1-self.beta, degree_freedom, non_centrality)
+		chi2_value = chi2.ppf(alpha, degree_freedom)
+		non_chi2_value = ncx2.ppf(1-beta, degree_freedom, non_centrality)
 	# print("after", repetition, non_chi2_value, chi2_value)
 	
 	# repetition += 5
@@ -97,7 +137,7 @@ def compute_repetition(self, faulty_data, faultfree_data, alpha, beta):
 		# print()
 		return INT_MAX
 	else:
-		return math.ceil(repetition), boundary
+		return ceil(repetition), boundary
 
 def matrix_operation(self, matrix_list, quantum_state=[], max_size=4):
 	matrix = np.eye(max_size)
@@ -111,11 +151,3 @@ def matrix_operation(self, matrix_list, quantum_state=[], max_size=4):
 		return np.dot(matrix, quantum_state)
 	else:
 		return matrix
-def cal_effect_size(self, expected_vector, observed_vector):
-	delta_square = np.square(expected_vector - observed_vector)
-	effectsize = np.sum(delta_square/(expected_vector+INT_MIN))
-	effectsize = np.sqrt(effectsize)
-	if(effectsize<0.1):
-		# print(effectsize)
-		effectsize = 0.1
-	return effectsize
