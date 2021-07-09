@@ -95,4 +95,3 @@ class U_threshold_lopa(Fault):
 		for i in range(len(self.threshold)):
 			faulty_gate[0].params[i] = self.threshold[i] if faulty_gate[0].params[i] > self.threshold[i] else faulty_gate[0].params[i]
 		return [faulty_gate]
-		

@@ -247,16 +247,13 @@ class ATPG():
 			#     one_type_fault.append([CNOT_variation_fault(coupling_map[i], value=value)])
 			two_fault_list.append(deepcopy(one_type_fault))
 		return (single_fault_list, two_fault_list)
+
 	def get_quantum_gate(self, gate_type, index, parameter=[]):
 		if type(index) != list :
 			index = [index]
 
 		if(gate_type == Qgate.U3Gate):
 			return (gate_type(parameter[0], parameter[1], parameter[2]), [Qubit(QuantumRegister(self.circuit_size, self.qr_name), index[0])], [])
-		elif(gate_type == Qgate.U2Gate):
-			return (gate_type(parameter[0], parameter[1]), [Qubit(QuantumRegister(self.circuit_size, self.qr_name), index[0])], [])
-		elif(gate_type == Qgate.U1Gate):
-			return (gate_type(parameter[0]), [Qubit(QuantumRegister(self.circuit_size, self.qr_name), index[0])], [])
 		elif(gate_type == Qgate.CXGate):
 			return (gate_type(),[Qubit(QuantumRegister(self.circuit_size, self.qr_name), index[0]), Qubit(QuantumRegister(self.circuit_size, self.qr_name), index[1])], [])
 		elif(gate_type == Qgate.Barrier):
@@ -408,15 +405,15 @@ class ATPG():
 		faulty_quantum_state, faultfree_quantum_state = deepcopy(quantum_state), deepcopy(quantum_state)
 
 		faulty_gate_list, faultfree_gate_list, faulty_quantum_state, faultfree_quantum_state, repetition = activate_function(fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list)
-		effectsize = cal_effect_size(self.to_probability(faulty_quantum_state), self.to_probability(faultfree_quantum_state))
+		effectsize = cal_effect_size(to_probability(faulty_quantum_state), to_probability(faultfree_quantum_state))
 		# print(effectsize)
 		# test_cost = (len(faultfree_gate_list)) * repetition
 		# print(fault)
 		for time in range(20):
 			# faulty_gate_list_t, faultfree_gate_list_t, faulty_quantum_state_t, faultfree_quantum_state_t, repetition_t = activate_function(fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list)
-			# effectsize_t = cal_effect_size(self.to_probability(faulty_quantum_state_t), self.to_probability(faultfree_quantum_state_t))
+			# effectsize_t = cal_effect_size(to_probability(faulty_quantum_state_t), to_probability(faultfree_quantum_state_t))
 			faulty_gate_list, faultfree_gate_list, faulty_quantum_state, faultfree_quantum_state, repetition = activate_function(fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list)
-			effectsize = cal_effect_size(self.to_probability(faulty_quantum_state), self.to_probability(faultfree_quantum_state))
+			effectsize = cal_effect_size(to_probability(faulty_quantum_state), to_probability(faultfree_quantum_state))
 			# print(effectsize_t)
 			if repetition >= INT_MAX:
 				print()
@@ -444,7 +441,7 @@ class ATPG():
 		#     repetition = 10
 		print(fault, " repetition:", repetition, " len:", (len(faultfree_gate_list)), "effectsize", effectsize)
 		# print(faulty_quantum_state, faultfree_quantum_state)
-		print("ideal:", self.to_probability(faulty_quantum_state), self.to_probability(faultfree_quantum_state))
+		print("ideal:", to_probability(faulty_quantum_state), to_probability(faultfree_quantum_state))
 		return (faulty_gate_list, faultfree_gate_list, (len(faultfree_gate_list)))
 
 	def get_CNOT_gradient(self, fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list):
@@ -472,27 +469,27 @@ class ATPG():
 		faultfree_quantum_state = matrix_operation([[U3(parameter_list[0:3]), U3(parameter_list[3:6])], faultfree_matrix], faultfree_quantum_state)
 		faulty_quantum_state = matrix_operation([[U3(parameter_list[0:3]), U3(parameter_list[3:6])], faulty_matrix], faulty_quantum_state)
 
-		faulty_quantum_state_ = self.to_probability(faulty_quantum_state)
-		faultfree_quantum_state_ = self.to_probability(faultfree_quantum_state)
+		faulty_quantum_state_ = to_probability(faulty_quantum_state)
+		faultfree_quantum_state_ = to_probability(faultfree_quantum_state)
 		# faulty_quantum_state_, faultfree_quantum_state_ = compression(faulty_quantum_state_, faultfree_quantum_state_)        
 		repetition, boundary = compute_repetition(faulty_quantum_state_, faultfree_quantum_state_, self.alpha, self.beta)
 		return (faulty_gate_list, faultfree_gate_list, faulty_quantum_state, faultfree_quantum_state, repetition)
 
 	def two_gradient(self, parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state):
-		score = self.vector_distance(
+		score = vector_distance(
 				matrix_operation([[U3(parameter_list[0:3]), U3(parameter_list[3:6])], faultfree_matrix], faultfree_quantum_state), 
 				matrix_operation([[U3(parameter_list[0:3]), U3(parameter_list[3:6])], faulty_matrix], faulty_quantum_state))
 		new_parameter_list = [0]*len(parameter_list)
 
 		for i in range(len(parameter_list)):
 			parameter_list[i] += self.step
-			up_score = self.vector_distance(
+			up_score = vector_distance(
 				matrix_operation([[U3(parameter_list[0:3]), U3(parameter_list[3:6])], faultfree_matrix], faultfree_quantum_state), 
 				matrix_operation([[U3(parameter_list[0:3]), U3(parameter_list[3:6])], faulty_matrix], faulty_quantum_state))
 			parameter_list[i] -= 2*self.step
 
 			# parameter_list[i] -= self.step
-			down_score = self.vector_distance(
+			down_score = vector_distance(
 				matrix_operation([[U3(parameter_list[0:3]), U3(parameter_list[3:6])], faultfree_matrix], faultfree_quantum_state), 
 				matrix_operation([[U3(parameter_list[0:3]), U3(parameter_list[3:6])], faulty_matrix], faulty_quantum_state))
 			parameter_list[i] += self.step
@@ -524,7 +521,7 @@ class ATPG():
 		for i in range(SEARCH_TIME):
 			self.single_gradient(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
 		
-		# score = self.vector_distance(faultfree_quantum_state, faulty_quantum_state)
+		# score = vector_distance(faultfree_quantum_state, faulty_quantum_state)
 		faulty_parameter = self.check_fault(fault, parameter_list)
 		faulty_gate_list.append(Qgate.U3Gate(faulty_parameter[0], faulty_parameter[1], faulty_parameter[2]))
 		faulty_gate_list.append(faulty[0][0])
@@ -535,8 +532,8 @@ class ATPG():
 		faultfree_quantum_state = matrix_operation([U3(parameter_list), faultfree_matrix], faultfree_quantum_state, max_size=2)
 		faulty_quantum_state = matrix_operation([U3(self.check_fault(fault, parameter_list)), faulty_matrix], faulty_quantum_state, max_size=2)
 		# print(faultfree_quantum_state, faulty_quantum_state)
-		faulty_quantum_state_ = self.to_probability(faulty_quantum_state)
-		faultfree_quantum_state_ = self.to_probability(faultfree_quantum_state)
+		faulty_quantum_state_ = to_probability(faulty_quantum_state)
+		faultfree_quantum_state_ = to_probability(faultfree_quantum_state)
 		# faulty_quantum_state_, faultfree_quantum_state_ = compression(faulty_quantum_state_, faultfree_quantum_state_)
 		repetition, boundary = compute_repetition(faulty_quantum_state_, faultfree_quantum_state_, self.alpha, self.beta)
 		# print(parameter_list, repetition)
@@ -547,20 +544,20 @@ class ATPG():
 
 	def single_gradient(self, parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault):
 
-		score = self.vector_distance(
+		score = vector_distance(
 				matrix_operation([U3(parameter_list), faultfree_matrix], faultfree_quantum_state, max_size=2), 
 				matrix_operation([U3(self.check_fault(fault, parameter_list)), faulty_matrix], faulty_quantum_state, max_size=2))
 		new_parameter_list = [0]*len(parameter_list)
 		# temp_value = 0
 		for i in range(len(parameter_list)):
 			parameter_list[i] += self.step
-			up_score = self.vector_distance(
+			up_score = vector_distance(
 				matrix_operation([U3(parameter_list), faultfree_matrix], faultfree_quantum_state, max_size=2), 
 				matrix_operation([U3(self.check_fault(fault, parameter_list)), faulty_matrix], faulty_quantum_state, max_size=2))
 
 			parameter_list[i] -= 2*self.step
 
-			down_score = self.vector_distance(
+			down_score = vector_distance(
 				matrix_operation([U3(parameter_list), faultfree_matrix], faultfree_quantum_state, max_size=2), 
 				matrix_operation([U3(self.check_fault(fault, parameter_list)), faulty_matrix], faulty_quantum_state, max_size=2))
 			parameter_list[i] += self.step
@@ -575,10 +572,6 @@ class ATPG():
 		for i in range(len(parameter_list)):
 			parameter_list[i] += new_parameter_list[i]
 		return 
-
-	
-
-	
 
 	def check_fault(self, fault, parameter_list):
 		if(type(fault)==U_variation_fault):
@@ -630,7 +623,7 @@ class ATPG():
 		counts = job_sim.result().get_counts()
 		for i in counts:
 			summantion_free[i] += counts[i]
-		configuration.sim_faultfree_distribution = self.to_np(summantion_free)
+		configuration.sim_faultfree_distribution = to_np(summantion_free)
 
 		for number, qc_faulty in enumerate(configuration.qc_faulty_list):
 			job_sim = execute(qc_faulty, self.backend, noise_model=self.noise_model, shots=shots)
@@ -642,7 +635,7 @@ class ATPG():
 			counts = job_sim.result().get_counts()
 			for i in counts:
 				summantion_faulty[i] += counts[i]
-			configuration.sim_faulty_distribution_list.append(self.to_np(summantion_faulty)) 
+			configuration.sim_faulty_distribution_list.append(to_np(summantion_faulty)) 
 
 			# print(configuration.sim_faulty_distribution_list[-1], configuration.sim_faultfree_distribution)
 			faulty_distribution, faultfree_distribution = compression_forfault(configuration.sim_faulty_distribution_list[-1], configuration.sim_faultfree_distribution, deepcopy(configuration.fault_list[number].index))
@@ -685,7 +678,7 @@ class ATPG():
 		#     counts = job_sim.result().get_counts()
 		#     for i in counts:
 		#         summantion_faulty[i] += counts[i]
-		#     configuration.faulty_test_distribution.append(self.to_np(summantion_faulty)) 
+		#     configuration.faulty_test_distribution.append(to_np(summantion_faulty)) 
 		# print(len(self.configuration_list))
 		print(configuration)
 
@@ -707,22 +700,9 @@ class ATPG():
 		for i in counts:
 			summantion[i] += counts[i]
 		
-		return( self.to_np(summantion) )
+		return( to_np(summantion) )
 
-	def to_np(self, vector):
-		if(type(vector)==dict or type(vector)==list):
-			probability = np.zeros(len(vector))
-			for i in vector:
-				probability[int(i, 2)] = vector[i]
-		else:
-			probability = vector
 
-		probability = probability/np.sum(probability)
-		return probability
-
-	def to_probability(self, probability):
-		# print(np.array(probability*np.conj(probability), dtype=float))
-		return np.array(probability*np.conj(probability), dtype=float)
 
 	def get_noise_model(self):
 		# Error probabilities
@@ -742,5 +722,3 @@ class ATPG():
 
 		return noise_model
 		
-	def vector_distance(self, vector1, vector2):
-		return np.sum(np.square(np.abs(np.subtract(self.to_probability(vector1), self.to_probability(vector2)))))
