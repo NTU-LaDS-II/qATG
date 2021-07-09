@@ -42,10 +42,10 @@ class CNOT_variation_fault(Fault):
 
 	def get_faulty_gate(self, gate_info):
 		# return 一維陣列 只有quantum gate
-		buff = deepcopy(gate_info)
+		
 		gate_list = []
 		gate_list.append(Qgate.U3Gate(self.value[0], self.value[1], self.value[2]))
-		gate_list.append(buff[0])
+		gate_list.append(gate_info)
 		gate_list.append(Qgate.U3Gate(self.value[3], self.value[4], self.value[5]))
 
 		return gate_list
