@@ -1,6 +1,7 @@
 import qiskit
 import qiskit.circuit.library as Qgate
 import numpy as np
+from QuantumGate import *
 from copy import deepcopy
 
 class Fault():
@@ -65,8 +66,8 @@ class U_variation_fault(Fault):
 		#gate_info is class QuantumGate
 	def get_faulty_gate(self , gate_info):
 		faulty_gate = deepcopy(gate_info)
-		for i in range(len(ratio)):
-			faulty_gate.Qgate.params[i] = self.ratio[i]*faulty_gate.Qgate.params[i] + self.bias[i]
+		for i in range(len(self.ratio)):
+			faulty_gate.gate.params[i] = self.ratio[i]*faulty_gate.gate.params[i] + self.bias[i]
 		return faulty_gate
 
 
@@ -87,6 +88,6 @@ class U_threshold_lopa(Fault):
 	def get_faulty_gate(self, gate_info):
 		#gate_info is class QuantumGate
 		faulty_gate = deepcopy(gate_info)
-		for i in len(threshold):
-			faulty_gate.Qgate.params[i] = self.threshold[i] if faulty_gate.Qgate.params[i] > self.threshold[i] else faulty_gate.Qgate.params[i]
+		for i in range(len(self.threshold)):
+			faulty_gate.gate.params[i] = self.threshold[i] if faulty_gate.gate.params[i] > self.threshold[i] else faulty_gate.gate.params[i]
 		return faulty_gate

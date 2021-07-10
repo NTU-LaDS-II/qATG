@@ -13,7 +13,7 @@ from qiskit import QuantumRegister, ClassicalRegister, QuantumCircuit
 from qiskit.providers.aer.noise.errors import standard_errors, ReadoutError
 import statsmodels.stats.power as smp
 import random
-import QuantumGate
+from QuantumGate import *
 from util import *
 
 random.seed(427427)
@@ -305,6 +305,11 @@ class ATPG():
 		print("Number of configuration:", len(configuration_list))
 		return configuration_list
 
+	def getQgate(self , gate_type, index, parameter):
+		#return qiskit 要求的 list 格式 
+		buff = self.get_quantum_gate(gate_type = gate_type, index = index, parameter = parameter)
+		return [buff.gate , buff.pos , []]
+
 	def build_two_configuration(self, template, fault_list):
 		qc_faulty_list = []
 		qc_faultfree = QuantumCircuit(self.quantumregister, self.classicalregister)
@@ -320,30 +325,30 @@ class ATPG():
 				gate_index = 0
 				if fault_index == index_pair:
 					while gate_index < len(template[0]):
-						qc_faulty._data.append(self.get_quantum_gate(gate_type=type(template[0][gate_index][1]), index=fault_index[0], parameter=template[0][gate_index][1].params))                
-						qc_faulty._data.append(self.get_quantum_gate(gate_type=type(template[0][gate_index][0]), index=fault_index[1], parameter=template[0][gate_index][0].params))
+						qc_faulty._data.append(self.getQgate(gate_type=type(template[0][gate_index][1]), index=fault_index[0], parameter=template[0][gate_index][1].params))                
+						qc_faulty._data.append(self.getQgate(gate_type=type(template[0][gate_index][0]), index=fault_index[1], parameter=template[0][gate_index][0].params))
 
-						qc_faulty._data.append(self.get_quantum_gate(gate_type=type(template[0][gate_index+1]), index=fault_index[0], parameter=template[0][gate_index+1].params))
+						qc_faulty._data.append(self.getQgate(gate_type=type(template[0][gate_index+1]), index=fault_index[0], parameter=template[0][gate_index+1].params))
 				
-						qc_faulty._data.append(self.get_quantum_gate(gate_type=Qgate.Barrier, index=fault_index[0], parameter=[]))
-						qc_faulty._data.append(self.get_quantum_gate(gate_type=Qgate.Barrier, index=fault_index[1], parameter=[]))
-						qc_faulty._data.append(self.get_quantum_gate(gate_type=type(template[0][gate_index+2]), index=fault_index, parameter=[]))
-						qc_faulty._data.append(self.get_quantum_gate(gate_type=Qgate.Barrier, index=fault_index[0], parameter=[]))
-						qc_faulty._data.append(self.get_quantum_gate(gate_type=Qgate.Barrier, index=fault_index[1], parameter=[]))
+						qc_faulty._data.append(self.getQgate(gate_type=Qgate.Barrier, index=fault_index[0], parameter=[]))
+						qc_faulty._data.append(self.getQgate(gate_type=Qgate.Barrier, index=fault_index[1], parameter=[]))
+						qc_faulty._data.append(self.getQgate(gate_type=type(template[0][gate_index+2]), index=fault_index, parameter=[]))
+						qc_faulty._data.append(self.getQgate(gate_type=Qgate.Barrier, index=fault_index[0], parameter=[]))
+						qc_faulty._data.append(self.getQgate(gate_type=Qgate.Barrier, index=fault_index[1], parameter=[]))
 
-						qc_faulty._data.append(self.get_quantum_gate(gate_type=type(template[0][gate_index+3]), index=fault_index[1], parameter=template[0][gate_index+3].params))
+						qc_faulty._data.append(self.getQgate(gate_type=type(template[0][gate_index+3]), index=fault_index[1], parameter=template[0][gate_index+3].params))
 						gate_index += 4
 				else:
 					while gate_index < len(template[1]):
 						# print(fault_index)
-						qc_faulty._data.append(self.get_quantum_gate(gate_type=type(template[1][gate_index][1]), index=fault_index[0], parameter=template[1][gate_index][1].params))                
-						qc_faulty._data.append(self.get_quantum_gate(gate_type=type(template[1][gate_index][0]), index=fault_index[1], parameter=template[1][gate_index][0].params))
+						qc_faulty._data.append(self.getQgate(gate_type=type(template[1][gate_index][1]), index=fault_index[0], parameter=template[1][gate_index][1].params))                
+						qc_faulty._data.append(self.getQgate(gate_type=type(template[1][gate_index][0]), index=fault_index[1], parameter=template[1][gate_index][0].params))
 				
-						qc_faulty._data.append(self.get_quantum_gate(gate_type=Qgate.Barrier, index=fault_index[0], parameter=[]))
-						qc_faulty._data.append(self.get_quantum_gate(gate_type=Qgate.Barrier, index=fault_index[1], parameter=[]))
-						qc_faulty._data.append(self.get_quantum_gate(gate_type=type(template[1][gate_index+1]), index=fault_index, parameter=[]))
-						qc_faulty._data.append(self.get_quantum_gate(gate_type=Qgate.Barrier, index=fault_index[0], parameter=[]))
-						qc_faulty._data.append(self.get_quantum_gate(gate_type=Qgate.Barrier, index=fault_index[1], parameter=[]))
+						qc_faulty._data.append(self.getQgate(gate_type=Qgate.Barrier, index=fault_index[0], parameter=[]))
+						qc_faulty._data.append(self.getQgate(gate_type=Qgate.Barrier, index=fault_index[1], parameter=[]))
+						qc_faulty._data.append(self.getQgate(gate_type=type(template[1][gate_index+1]), index=fault_index, parameter=[]))
+						qc_faulty._data.append(self.getQgate(gate_type=Qgate.Barrier, index=fault_index[0], parameter=[]))
+						qc_faulty._data.append(self.getQgate(gate_type=Qgate.Barrier, index=fault_index[1], parameter=[]))
 						gate_index += 2
 			
 			qc_faulty.measure(self.quantumregister, self.classicalregister)
@@ -353,14 +358,14 @@ class ATPG():
 		gate_index = 0
 		while gate_index < len(template[1]):
 			for fault in fault_list:##這組電路幾個pair
-				qc_faultfree._data.append(self.get_quantum_gate(gate_type=type(template[1][gate_index][1]), index=fault.index[0], parameter=template[1][gate_index][1].params))                
-				qc_faultfree._data.append(self.get_quantum_gate(gate_type=type(template[1][gate_index][0]), index=fault.index[1], parameter=template[1][gate_index][0].params))
+				qc_faultfree._data.append(self.getQgate(gate_type=type(template[1][gate_index][1]), index=fault.index[0], parameter=template[1][gate_index][1].params))                
+				qc_faultfree._data.append(self.getQgate(gate_type=type(template[1][gate_index][0]), index=fault.index[1], parameter=template[1][gate_index][0].params))
 				
-				qc_faultfree._data.append(self.get_quantum_gate(gate_type=Qgate.Barrier, index=fault.index[0], parameter=[]))
-				qc_faultfree._data.append(self.get_quantum_gate(gate_type=Qgate.Barrier, index=fault.index[1], parameter=[]))
-				qc_faultfree._data.append(self.get_quantum_gate(gate_type=type(template[1][gate_index+1]), index=fault.index, parameter=[]))
-				qc_faultfree._data.append(self.get_quantum_gate(gate_type=Qgate.Barrier, index=fault.index[0], parameter=[]))
-				qc_faultfree._data.append(self.get_quantum_gate(gate_type=Qgate.Barrier, index=fault.index[1], parameter=[]))
+				qc_faultfree._data.append(self.getQgate(gate_type=Qgate.Barrier, index=fault.index[0], parameter=[]))
+				qc_faultfree._data.append(self.getQgate(gate_type=Qgate.Barrier, index=fault.index[1], parameter=[]))
+				qc_faultfree._data.append(self.getQgate(gate_type=type(template[1][gate_index+1]), index=fault.index, parameter=[]))
+				qc_faultfree._data.append(self.getQgate(gate_type=Qgate.Barrier, index=fault.index[0], parameter=[]))
+				qc_faultfree._data.append(self.getQgate(gate_type=Qgate.Barrier, index=fault.index[1], parameter=[]))
 			gate_index += 2
 		qc_faultfree.measure(self.quantumregister, self.classicalregister)
 		# print(length)
@@ -372,21 +377,23 @@ class ATPG():
 		new_configuration.template = template
 		# print(new_configuration)
 		return new_configuration
+	
 
 	def build_single_configuration(self, template, fault_list):
 		length = template[2]
 		qc_faulty_list = []
 		for num_circuit in range(self.circuit_size):
+			#qc_faulty 存 qiskit Qgate
 			qc_faulty = QuantumCircuit(self.quantumregister, self.classicalregister)
 			for gate in template[0]:
-				qc_faulty._data.append(self.get_quantum_gate(gate_type=type(gate), index=num_circuit, parameter=gate.params))
-				qc_faulty._data.append(self.get_quantum_gate(gate_type=Qgate.Barrier, index=num_circuit, parameter=[]))
+				qc_faulty._data.append(self.getQgate(gate_type=type(gate), index=num_circuit, parameter=gate.params))
+				qc_faulty._data.append(self.getQgate(gate_type=Qgate.Barrier, index=num_circuit, parameter=[]))
 
 			for gate in template[1]:
 				for n in range(self.circuit_size):
 					if n != num_circuit:
-						qc_faulty._data.append(self.get_quantum_gate(gate_type=type(gate), index=n, parameter=gate.params))
-						qc_faulty._data.append(self.get_quantum_gate(gate_type=Qgate.Barrier, index=n, parameter=[]))
+						qc_faulty._data.append(self.getQgate(gate_type=type(gate), index=n, parameter=gate.params))
+						qc_faulty._data.append(self.getQgate(gate_type=Qgate.Barrier, index=n, parameter=[]))
 
 			qc_faulty.measure(self.quantumregister, self.classicalregister)
 			qc_faulty_list.append(qc_faulty)
@@ -395,8 +402,8 @@ class ATPG():
 		qc_faultfree = QuantumCircuit(self.quantumregister, self.classicalregister)
 		for gate in template[1]:
 			for n in range(self.circuit_size):
-				qc_faultfree._data.append(self.get_quantum_gate(gate_type=type(gate), index=n, parameter=gate.params))
-				qc_faultfree._data.append(self.get_quantum_gate(gate_type=Qgate.Barrier, index=n, parameter=[]))
+				qc_faultfree._data.append(self.getQgate(gate_type=type(gate), index=n, parameter=gate.params))
+				qc_faultfree._data.append(self.getQgate(gate_type=Qgate.Barrier, index=n, parameter=[]))
 		qc_faultfree.measure(self.quantumregister, self.classicalregister)
 		# print("faultfree")
 		# print(qc_faultfree)
@@ -471,9 +478,9 @@ class ATPG():
 		
 		faulty_gate_list.append([Qgate.U3Gate(parameter_list[0], parameter_list[1], parameter_list[2]), Qgate.U3Gate(parameter_list[3], parameter_list[4], parameter_list[5])])
 		#for qiskit func, so need to append QuantumGate not QuantumGate.gate
-		faulty_gate_list.append(faulty[0])
+		faulty_gate_list.append(faulty[0].gate)
 		faulty_gate_list.append(Qgate.CXGate())
-		faulty_gate_list.append(faulty[2])
+		faulty_gate_list.append(faulty[2].gate)
 
 		faultfree_quantum_state = matrix_operation([[U3(parameter_list[0:3]), U3(parameter_list[3:6])], faultfree_matrix], faultfree_quantum_state)
 		faulty_quantum_state = matrix_operation([[U3(parameter_list[0:3]), U3(parameter_list[3:6])], faulty_matrix], faulty_quantum_state)
@@ -519,14 +526,14 @@ class ATPG():
 		#for 1 qubit gate
 		#faultfree is a QuantumGate
 		faultfree = self.get_activation_gate(fault)
-		#faulty is a list of QuantumGate
+		#faulty is a  QuantumGate
 		faulty = fault.get_faulty_gate(faultfree)
 		#faulty = self.get_activation_gate(fault)
-		
+
 		
 		# print("Start:",faulty[0][0].params)
 		faultfree_matrix = faultfree.gate.to_matrix()
-		faulty_matrix = faulty[0].gate.to_matrix()
+		faulty_matrix = faulty.gate.to_matrix()
 		parameter_list = [0, 0, 0]
 
 		# print(faultfree[0])
@@ -536,10 +543,10 @@ class ATPG():
 		# score = vector_distance(faultfree_quantum_state, faulty_quantum_state)
 		faulty_parameter = self.check_fault(fault, parameter_list)
 		faulty_gate_list.append(Qgate.U3Gate(faulty_parameter[0], faulty_parameter[1], faulty_parameter[2]))
-		faulty_gate_list.append(faulty[0])
+		faulty_gate_list.append(faulty.gate)
 		
 		faultfree_gate_list.append(Qgate.U3Gate(parameter_list[0], parameter_list[1], parameter_list[2]))
-		faultfree_gate_list.append(faultfree)
+		faultfree_gate_list.append(faultfree.gate)
 		# print(faulty_matrix)
 		faultfree_quantum_state = matrix_operation([U3(parameter_list), faultfree_matrix], faultfree_quantum_state, max_size=2)
 		faulty_quantum_state = matrix_operation([U3(self.check_fault(fault, parameter_list)), faulty_matrix], faulty_quantum_state, max_size=2)

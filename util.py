@@ -1,6 +1,7 @@
 from math import ceil
 import numpy as np
 from copy import deepcopy
+from QuantumGate import *
 from scipy.stats import chi2, ncx2
 
 INT_MIN = 1E-100
