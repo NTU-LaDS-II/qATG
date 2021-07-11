@@ -11,7 +11,7 @@ from qiskit.providers.aer.noise import NoiseModel
 from qiskit import execute, Aer
 from qiskit import QuantumRegister, ClassicalRegister, QuantumCircuit
 from qiskit.providers.aer.noise.errors import standard_errors, ReadoutError
-import statsmodels.stats.power as smp
+# import statsmodels.stats.power as smp
 import random
 from QuantumGate import *
 from util import *
