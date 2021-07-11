@@ -1,6 +1,6 @@
-import qiskit
+# import qiskit
 import qiskit.circuit.library as Qgate
-import numpy as np
+from numpy import pi
 from QuantumGate import *
 from copy import deepcopy
 
@@ -42,28 +42,30 @@ class CNOT_variation_fault(Fault):
 		#一維陣列 element is QuantumGate
 		return gate_list
 
-############ U ratio & bias ############      
+############ U ratio & bias ############
 #ratio and bias are list and their length depend on which type of gate it is
-class U_variation_fault(Fault):
-	def __init__(self, index, ratio=[1, 1, 1], bias=[0, 0, 0]):
-		#if(len(ratio)!=3):
-		#    print("size of ratio should be 3")
-		#    exit() 
-		#if(len(bias)!=3):
-		#   print("size of bias should be 3")
-		#    exit() 
-		description = 'U3 variation fault at '+str(index[0])+', ratio parameter:'
+class Variation_fault(Fault):
+	def __init__(self, gate_type, index, ratio=[1, 1, 1], bias=[0, 0, 0]):
+		# if(len(ratio)!=3):
+		#	print("size of ratio should be 3")
+		#	exit() 
+		# if(len(bias)!=3):
+		#	print("size of bias should be 3")
+		#	exit() 
+		description = gate_type.__name__
+		description += ' variation fault at '+str(index[0])+', ratio parameter:'
 		for i in ratio:
-		    description += ' '+str(i)
+			description += ' '+str(i)
 		description += ', bias parameter:'
 		for i in bias:
-		    description += ' '+str(i)
-		super().__init__(index, Qgate.U3Gate, description)
+			description += ' '+str(i)
+		super().__init__(index, gate_type, description)
 		self.ratio = ratio
 		self.bias = bias
 		self.description = description
-		#彈性空間，由ratio的len決定
-		#gate_info is class QuantumGate
+		self.gate_type = gate_type
+		# 彈性空間，由ratio的len決定
+		# gate_info is class QuantumGate
 	def get_faulty_gate(self , gate_info):
 		faulty_gate = deepcopy(gate_info)
 		for i in range(len(self.ratio)):
@@ -72,21 +74,23 @@ class U_variation_fault(Fault):
 
 
 ############ U low pass ############
-class U_threshold_lopa(Fault):
-	def __init__(self, index, threshold=[np.pi*2, np.pi*2, np.pi*2]):
+class Threshold_lopa(Fault):
+	def __init__(self, gate_type, index, threshold=[pi*2, pi*2, pi*2]):
 
-		#if(len(threshold)!=3):
-		#    print("size of threshold should be 3")
-		#    exit() 
-		description = 'U3 threshold fault at '+str(index[0])+', threshold parameter:'
+		# if(len(threshold)!=3):
+		#	print("size of threshold should be 3")
+		#	exit()
+		description = gate_type.__name__
+		description += ' threshold fault at '+str(index[0])+', threshold parameter:'
 		for i in threshold:
-		    description += ' '+str(i)
+			description += ' '+str(i)
 
-		super().__init__(index, Qgate.U3Gate, description)
+		super().__init__(index, gate_type, description)
 		self.threshold = threshold
-		
+		self.description = description
+		self.gate_type = gate_type
 	def get_faulty_gate(self, gate_info):
-		#gate_info is class QuantumGate
+		# gate_info is class QuantumGate
 		faulty_gate = deepcopy(gate_info)
 		for i in range(len(self.threshold)):
 			faulty_gate.gate.params[i] = self.threshold[i] if faulty_gate.gate.params[i] > self.threshold[i] else faulty_gate.gate.params[i]

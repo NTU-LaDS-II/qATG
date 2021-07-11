@@ -11,13 +11,23 @@ sample_time = 10000
 threshold = 0.01
 r = 0.1
 
-def get_params_list(i):
+def get_params_list(gate):
+	# gate is a gate
+	amount = gate.__init__.__code__.co_argcount - len(gate.__init__.__defaults__) - 1
+	# -1 for self
 	ratio_list = []
 	bias_list = []
 	threshold_list = []
-	ratio_list = [[1-r, 1, 1], [1, 1-r, 1], [1, 1, 1-r]]
-	bias_list = [[r*np.pi, 0, 0], [0, r*np.pi, 0], [0, 0, r*np.pi]]
-	threshold_list = [[1.5*np.pi, 2*np.pi, 2*np.pi], [2*np.pi, 1.5*np.pi, 2*np.pi], [2*np.pi, 2*np.pi, 1.5*np.pi]]
+	for i in range(amount):
+		ratio_candidate = [1 for _ in range(amount)]
+		bias_candidate = [0 for _ in range(amount)]
+		threshold_candidate = [2*np.pi for _ in range(amount)]
+		ratio_candidate[i] = 1-r
+		bias_candidate[i] = r*np.pi
+		threshold_candidate[i] = 1.5*np.pi
+		ratio_list.append(ratio_candidate)
+		bias_list.append(bias_candidate)
+		threshold_list.append(threshold_candidate)
 	return ratio_list , bias_list , threshold_list
 
 def compression_forfault(expected_vector, observed_vector, fault_index):

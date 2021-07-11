@@ -178,8 +178,9 @@ class Configuration():
 		print(" # of data:", len(self.real_faultfree_distribution_2))
 
 class ATPG():
-	def __init__(self, circuit_size, qr_name='q', cr_name='c'):
+	def __init__(self, circuit_size, gate_set, qr_name='q', cr_name='c'):
 		self.circuit_size = circuit_size
+		self.gate_set = gate_set
 		self.qr_name = qr_name
 		self.cr_name = cr_name
 		self.quantumregister = QuantumRegister(self.circuit_size, self.qr_name)
@@ -190,43 +191,40 @@ class ATPG():
 		self.configuration_list = []
 		self.alpha = 0.99
 		self.beta = 0.9999
+		self.gate_set = gate_set
 		return
 
 	def get_fault_list(self , coupling_map):
 		single_fault_list = []
 		two_fault_list = []
 
-		#first insert single_fault_list
-		for i in range(3):
-			ratio_list , bias_list , threshold_list = get_params_list(i)
-
+		# first insert single_fault_list
+		for gate_type in self.gate_set:
+			ratio_list , bias_list , threshold_list = get_params_list(gate_type)
 
 			for ratio in ratio_list:
-				U_v_fault = []
+				V_fault = []
 				for qb in range(self.circuit_size):
-					U_v_fault.append(U_variation_fault([qb], ratio=ratio))
-					single_fault_list.append(U_v_fault)
-
+					V_fault.append(Variation_fault(gate_type, [qb], ratio=ratio))
+				single_fault_list.append(V_fault)
 
 			for bias in bias_list:
-				U_v_fault = []
+				V_fault = []
 				for qb in range(self.circuit_size):
-					U_v_fault.append(U_variation_fault([qb], bias=bias))
-					single_fault_list.append(U_v_fault)
+					V_fault.append(Variation_fault(gate_type, [qb], bias=bias))
+				single_fault_list.append(V_fault)
 
 			for threshold in threshold_list:
-				U_t_fault = []
+				T_fault = []
 				for qb in range(self.circuit_size):
-					U_t_fault.append(U_threshold_lopa([qb], threshold=threshold))
-					single_fault_list.append(U_t_fault)
-
+					T_fault.append(Threshold_lopa(gate_type, [qb], threshold=threshold))
+				single_fault_list.append(T_fault)
 
 		value = 0.05*np.pi
 		f = [[value, value, value, value, value, value], [value, value, -value, value, value, -value], [value, -value, value, value, -value, value] , [value, -value, -value, value, -value, -value],
 		[-value, value, value, -value, value, value], [-value, value, -value, -value, value, -value], [-value, -value, value, -value, -value, value] , [-value, -value, -value, -value, -value, -value]]
 		# f = [[value, value, value, value, value, value]]
 		for value in f:
-		# for value in [[0.19, -0.17, 0.13, -0.22, 0.18, -0.15]]:
 			one_type_fault = []
 			drop_fault = [] 
 			while len(drop_fault) != len(coupling_map):
@@ -248,14 +246,15 @@ class ATPG():
 			#     one_type_fault.append([CNOT_variation_fault(coupling_map[i], value=value)])
 			two_fault_list.append(deepcopy(one_type_fault))
 		return (single_fault_list, two_fault_list)
-		#before retrun list before [gate , index , []]
-		#now return QuantumGate
+		# before retrun list before [gate , index , []]
+		# now return QuantumGate
+
 	def get_quantum_gate(self, gate_type, index, parameter=[]):
 		if type(index) != list :
 			index = [index]
 
-		if(gate_type == Qgate.U3Gate):
-			return QuantumGate(gate_type(parameter[0], parameter[1], parameter[2]) , [Qubit(QuantumRegister(self.circuit_size, self.qr_name) , index[0])] , [])
+		if(gate_type in self.gate_set):
+			return QuantumGate(gate_type(*parameter) , [Qubit(QuantumRegister(self.circuit_size, self.qr_name) , index[0])] , [])
 			
 		elif(gate_type == Qgate.CXGate):
 			return QuantumGate(gate_type() , [Qubit(QuantumRegister(self.circuit_size, self.qr_name), index[0]) , Qubit(QuantumRegister(self.circuit_size, self.qr_name), index[1])], [])
@@ -263,6 +262,10 @@ class ATPG():
 		elif(gate_type == Qgate.Barrier):
 			return QuantumGate(gate_type(1) , [Qubit(QuantumRegister(self.circuit_size, self.qr_name), index[0])] , [])
 			
+		else:
+			print("Get Quantum Gate Error")
+			print(gate_type, gate_type.__name__)
+
 	def get_test_configuration(self, single_fault_list, two_fault_list, initial_state=np.array([1, 0])):
 		configuration_list = []
 
@@ -377,7 +380,6 @@ class ATPG():
 		new_configuration.template = template
 		# print(new_configuration)
 		return new_configuration
-	
 
 	def build_single_configuration(self, template, fault_list):
 		length = template[2]
@@ -417,15 +419,9 @@ class ATPG():
 
 		faulty_gate_list, faultfree_gate_list, faulty_quantum_state, faultfree_quantum_state, repetition = activate_function(fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list)
 		effectsize = cal_effect_size(to_probability(faulty_quantum_state), to_probability(faultfree_quantum_state))
-		# print(effectsize)
-		# test_cost = (len(faultfree_gate_list)) * repetition
-		# print(fault)
 		for time in range(20):
-			# faulty_gate_list_t, faultfree_gate_list_t, faulty_quantum_state_t, faultfree_quantum_state_t, repetition_t = activate_function(fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list)
-			# effectsize_t = cal_effect_size(to_probability(faulty_quantum_state_t), to_probability(faultfree_quantum_state_t))
 			faulty_gate_list, faultfree_gate_list, faulty_quantum_state, faultfree_quantum_state, repetition = activate_function(fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list)
 			effectsize = cal_effect_size(to_probability(faulty_quantum_state), to_probability(faultfree_quantum_state))
-			# print(effectsize_t)
 			if repetition >= INT_MAX:
 				print()
 				print("error")
@@ -433,38 +429,23 @@ class ATPG():
 				print(time, gate_list, faulty_quantum_state, faultfree_quantum_state)
 				print()
 
-			# if  (len(faultfree_gate_list_t)) * repetition_ < test_cost * cost_ratio:
-			# if  1:
-			#     effectsize = effectsize_t
-			#     repetition = repetition_t
-			#     faulty_gate_list = faulty_gate_list_t
-			#     faultfree_gate_list = faultfree_gate_list_t
-			#     faulty_quantum_state = faulty_quantum_state_t
-			#     faultfree_quantum_state = faultfree_quantum_state_t
-				# test_cost = (len(faultfree_gate_list)) * repetition
-
 			if effectsize>5:
 				break
 
-		# for i in gate_list:
-		#     print(i)
-		# if (repetition<10):
-		#     repetition = 10
 		print(fault, " repetition:", repetition, " len:", (len(faultfree_gate_list)), "effectsize", effectsize)
-		# print(faulty_quantum_state, faultfree_quantum_state)
 		print("ideal:", to_probability(faulty_quantum_state), to_probability(faultfree_quantum_state))
 		return (faulty_gate_list, faultfree_gate_list, (len(faultfree_gate_list)))
 
 	def get_CNOT_gradient(self, fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list):
-		#for 2 qubit gate
-		#faultfre is a QuantumGate
+		# for 2 qubit gate
+		# faultfre is a QuantumGate
 		faultfree = self.get_quantum_gate(gate_type=fault.gate_type, index=fault.index, parameter=[])
-		#faulty is a list of QuantumGate
+		# faulty is a list of QuantumGate
 		faulty = fault.get_faulty_gate(faultfree)
-		#this is a list 中間的參數是index
-		#faulty = self.get_quantum_gate(gate_type=fault.gate_type, index=fault.index, parameter=[])
+		# this is a list 中間的參數是index
+		# faulty = self.get_quantum_gate(gate_type=fault.gate_type, index=fault.index, parameter=[])
 
-		#QuantumGate member: gate , index , []
+		# QuantumGate member: gate , index , []
 		faultfree_matrix = faultfree.gate.to_matrix()
 		faulty_matrix = fault.gate_type().to_matrix()
 		faulty_matrix = np.dot(np.kron(faulty[0].gate.to_matrix(), np.eye(2)), faulty_matrix)
@@ -477,7 +458,7 @@ class ATPG():
 		faultfree_gate_list.append(Qgate.CXGate())
 		
 		faulty_gate_list.append([Qgate.U3Gate(parameter_list[0], parameter_list[1], parameter_list[2]), Qgate.U3Gate(parameter_list[3], parameter_list[4], parameter_list[5])])
-		#for qiskit func, so need to append QuantumGate not QuantumGate.gate
+		# for qiskit func, so need to append QuantumGate not QuantumGate.gate
 		faulty_gate_list.append(faulty[0].gate)
 		faulty_gate_list.append(Qgate.CXGate())
 		faulty_gate_list.append(faulty[2].gate)
@@ -487,7 +468,6 @@ class ATPG():
 
 		faulty_quantum_state_ = to_probability(faulty_quantum_state)
 		faultfree_quantum_state_ = to_probability(faultfree_quantum_state)
-		# faulty_quantum_state_, faultfree_quantum_state_ = compression(faulty_quantum_state_, faultfree_quantum_state_)        
 		repetition, boundary = compute_repetition(faulty_quantum_state_, faultfree_quantum_state_, self.alpha, self.beta)
 		return (faulty_gate_list, faultfree_gate_list, faulty_quantum_state, faultfree_quantum_state, repetition)
 
@@ -504,7 +484,6 @@ class ATPG():
 				matrix_operation([[U3(parameter_list[0:3]), U3(parameter_list[3:6])], faulty_matrix], faulty_quantum_state))
 			parameter_list[i] -= 2*self.step
 
-			# parameter_list[i] -= self.step
 			down_score = vector_distance(
 				matrix_operation([[U3(parameter_list[0:3]), U3(parameter_list[3:6])], faultfree_matrix], faultfree_quantum_state), 
 				matrix_operation([[U3(parameter_list[0:3]), U3(parameter_list[3:6])], faulty_matrix], faulty_quantum_state))
@@ -593,37 +572,39 @@ class ATPG():
 		return 
 
 	def check_fault(self, fault, parameter_list):
-		if(type(fault)==U_variation_fault):
-			return [parameter_list[0]*fault.ratio[0]+fault.bias[0],
-					parameter_list[1]*fault.ratio[1]+fault.bias[1],
-					parameter_list[2]*fault.ratio[2]+fault.bias[2]]
-		elif(type(fault)==U_threshold_lopa):
-			return [fault.threshold[0] if parameter_list[0] > fault.threshold[0] else parameter_list[0],
-					fault.threshold[1] if parameter_list[1] > fault.threshold[1] else parameter_list[1],
-					fault.threshold[2] if parameter_list[2] > fault.threshold[2] else parameter_list[2]]
+		if(type(fault) == Variation_fault and fault.gate_type == Qgate.U3Gate):
+			res = []
+			for i in range(len(parameter_list)):
+				res.append(parameter_list[i]*fault.ratio[i]+fault.bias[i])
+			return res
+		elif(type(fault) == Threshold_lopa and fault.gate_type == Qgate.U3Gate):
+			res = []
+			for i in range(len(parameter_list)):
+				res.append(fault.threshold[i] if parameter_list[i] > fault.threshold[i] else parameter_list[i])
+			return res
 		else:
 			return parameter_list
 
 	def get_activation_gate(self, fault):
-		if(type(fault)==U_variation_fault):
+		if(type(fault) == Variation_fault):
 			ratio = []
 			bias = []
 			for r in fault.ratio:
-				if r<1:
+				if r < 1:
 					ratio.append(2*np.pi)
 				else:
 					ratio.append(0)
 				bias.append(0)
 			return self.get_quantum_gate(gate_type=fault.gate_type, index=fault.index, parameter=ratio)
-		elif(type(fault)==U_threshold_lopa):
+		elif(type(fault) == Threshold_lopa):
 			threshold = []
 			for t in fault.threshold:
-				if t<(2*np.pi):
-					threshold.append(2*np.pi-INT_MIN)
+				if t < (2*np.pi):
+					threshold.append(2*np.pi - INT_MIN)
 				else:
 					threshold.append(0)
 			return self.get_quantum_gate(gate_type=fault.gate_type, index=fault.index, parameter=threshold)
-		elif(type(fault)==Qgate.CXGate):
+		elif(type(fault) == Qgate.CXGate):
 			return self.get_quantum_gate(gate_type=fault.gate_type, index=fault.index, parameter= [])
 
 	def simulate_configuration(self, configuration, shots=200000):
@@ -634,7 +615,6 @@ class ATPG():
 		configuration.boundary = 0 
 		
 		job_sim = execute(configuration.qc_faultfree, self.backend, noise_model=self.noise_model, shots=shots)
-		# job_sim = execute(configuration.qc_faultfree, self.backend, shots=shots)
 		
 		summantion_free = {}
 		for i in range(2**self.circuit_size):
@@ -646,7 +626,6 @@ class ATPG():
 
 		for number, qc_faulty in enumerate(configuration.qc_faulty_list):
 			job_sim = execute(qc_faulty, self.backend, noise_model=self.noise_model, shots=shots)
-			# job_sim = execute(qc_faulty, self.backend, shots=shots)
 
 			summantion_faulty = {}
 			for i in range(2**self.circuit_size):
@@ -656,16 +635,8 @@ class ATPG():
 				summantion_faulty[i] += counts[i]
 			configuration.sim_faulty_distribution_list.append(to_np(summantion_faulty)) 
 
-			# print(configuration.sim_faulty_distribution_list[-1], configuration.sim_faultfree_distribution)
 			faulty_distribution, faultfree_distribution = compression_forfault(configuration.sim_faulty_distribution_list[-1], configuration.sim_faultfree_distribution, deepcopy(configuration.fault_list[number].index))
-			# faulty_distribution, faultfree_distribution = compression(configuration.sim_faulty_distribution_list[-1], configuration.sim_faultfree_distribution)
-			# print(faulty_distribution, faultfree_distribution)
 			repetition, boundary = compute_repetition(faulty_distribution, faultfree_distribution, self.alpha, self.beta)
-			# effect_size = cal_effect_size(faulty_distribution, faultfree_distribution)
-			# before = repetition
-			# repetition = self.check_repetition(repetition, len(faulty_distribution)-1, effect_size, self.alpha, 1-self.beta)
-			# if (repetition - before) >0:
-			#     print("to reduce overkill, Add :", repetition-before, " repetitions")
 			configuration.repetition_list.append((repetition, boundary))
 
 		fault_index = []
@@ -680,29 +651,12 @@ class ATPG():
 
 		configuration.max_repetition = temp_list[0]
 		configuration.boundary = temp_list[1]
-		# configuration.sim_overkill = configuration.cal_overkill(configuration.sim_faultfree_distribution, configuration.sim_faulty_distribution_list, alpha=self.alpha)
-		# configuration.sim_testescape = configuration.cal_testescape(configuration.sim_faulty_distribution_list, configuration.sim_faulty_distribution_list, alpha=self.alpha)
-		
+
 		configuration.sim_overkill = configuration.cal_overkill_new(configuration.sim_faultfree_distribution, configuration.sim_faulty_distribution_list, fault_index, alpha=self.alpha)
 		configuration.sim_testescape = configuration.cal_testescape_new(configuration.sim_faulty_distribution_list, configuration.sim_faulty_distribution_list, fault_index, alpha=self.alpha)
 		
-		
-		# if(configuration.max_repetition) < 10:
-		#     configuration.max_repetition = 10
-		# for qc_faulty in configuration.qc_faulty_list:
-		#     job_sim = execute(qc_faulty, backend, noise_model=noise_model, shots=configuration.max_repetition)
-		#     summantion_faulty = {}
-		#     for i in range(2**self.circuit_size):
-		#         summantion_faulty['{0:b}'.format(i).zfill(self.circuit_size)] = 0
-		#     counts = job_sim.result().get_counts()
-		#     for i in counts:
-		#         summantion_faulty[i] += counts[i]
-		#     configuration.faulty_test_distribution.append(to_np(summantion_faulty)) 
-		# print(len(self.configuration_list))
 		print(configuration)
 
-		# print("faultfree_distribution:", configuration.faultfree_distribution)
-		# print("faulty_distribution:", configuration.faulty_distribution)
 		return
 
 	def simulate_circuit(self, qc, backend, shots, noise_model = False):
@@ -720,8 +674,6 @@ class ATPG():
 			summantion[i] += counts[i]
 		
 		return( to_np(summantion) )
-
-
 
 	def get_noise_model(self):
 		# Error probabilities
