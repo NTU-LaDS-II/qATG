@@ -6,11 +6,11 @@ from Gate import *
 from scipy.stats import chi2, ncx2
 import qiskit.circuit.library as Qgate
 from qiskit.circuit.quantumregister import Qubit
-from qiskit.quantum_info import process_fidelity
+# from qiskit.quantum_info import process_fidelity
 from qiskit.providers.aer.noise import NoiseModel
-from qiskit import execute, Aer
-from qiskit import QuantumRegister, ClassicalRegister, QuantumCircuit
 from qiskit.providers.aer.noise.errors import standard_errors, ReadoutError
+from qiskit.Aer import get_backend
+from qiskit import execute, transpile, QuantumRegister, ClassicalRegister, QuantumCircuit
 # import statsmodels.stats.power as smp
 import random
 from QuantumGate import *
@@ -24,6 +24,7 @@ random.seed(427427)
 # threshold = 0.01
 # r = 0.1
 
+# fuck that noise model
 
 class Configuration():
 	def __init__(self, qc_faulty_list, qc_faultfree, length, fault_list):
@@ -186,7 +187,7 @@ class ATPG():
 		self.quantumregister = QuantumRegister(self.circuit_size, self.qr_name)
 		self.classicalregister = ClassicalRegister(self.circuit_size, self.cr_name)
 		self.noise_model = self.get_noise_model()
-		self.backend = Aer.get_backend('qasm_simulator')
+		self.backend = get_backend('qasm_simulator')
 		self.step = 0.01
 		self.configuration_list = []
 		self.alpha = 0.99
