@@ -270,10 +270,11 @@ class ATPG():
 		configuration_list = []
 
 		for fault_type in single_fault_list:
-			template = self.generate_test_template(fault_type[0], np.array([1, 0]), self.get_single_gradient, cost_ratio=2)
-			configuration = self.build_single_configuration(template, fault_type)
-			self.simulate_configuration(configuration)
-			configuration_list.append(configuration)
+			for i in range(self.circuit_size):
+				template = self.generate_test_template(fault_type[0], np.array([1, 0]), self.get_single_gradient, cost_ratio=2)
+				configuration = self.build_single_configuration(template, fault_type)
+				self.simulate_configuration(configuration)
+				configuration_list.append(configuration)
 		print("finish build single configuration")
 
 		if two_fault_list:
