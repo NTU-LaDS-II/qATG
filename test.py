@@ -4,6 +4,7 @@ import numpy as np
 import qiskit.circuit.library as Qgate
 # import sys
 from warnings import filterwarnings
+from transpile_experiment import *
 filterwarnings('ignore')
 # initial_state = np.dot(np.kron(qiskit.extensions.standard.u2.U2Gate(0, np.pi).to_matrix(), qiskit.extensions.standard.u2.U2Gate(0, np.pi).to_matrix()),
 #      qiskit.extensions.standard.x.CnotGate().to_matrix())
@@ -12,14 +13,9 @@ filterwarnings('ignore')
 # initial_state = np.dot(qiskit.extensions.standard.u2.U2Gate(0, np.pi).to_matrix(), initial_state)
 # print(qiskit.extensions.standard.x.CnotGate().to_matrix())
 # print(initial_state)
-print("input num of gate type")
+gate_set  , qiskit_gate_set = get_gate_set()
 
-NumGateType = input()
-gate_set = []
-for i in range(NumGateType):
-	gate_set.append(input())
-
-generator = ATPG(circuit_size = 5, gate_set = [Qgate.U3Gate, Qgate.U2Gate, Qgate.U1Gate])
+generator = ATPG(circuit_size = 5, gate_set = gate_set , qiskit_gate_set = qiskit_gate_set)
 generator.alpha = 0.99
 generator.beta = 0.999
 

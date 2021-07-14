@@ -9,7 +9,7 @@ from qiskit.circuit.quantumregister import Qubit
 # from qiskit.quantum_info import process_fidelity
 from qiskit.providers.aer.noise import NoiseModel
 from qiskit.providers.aer.noise.errors import standard_errors, ReadoutError
-from qiskit.Aer import get_backend
+from qiskit import Aer
 from qiskit import execute, transpile, QuantumRegister, ClassicalRegister, QuantumCircuit
 # import statsmodels.stats.power as smp
 import random
@@ -179,15 +179,16 @@ class Configuration():
 		print(" # of data:", len(self.real_faultfree_distribution_2))
 
 class ATPG():
-	def __init__(self, circuit_size, gate_set, qr_name='q', cr_name='c'):
+	def __init__(self, circuit_size, gate_set, qiskit_gate_set, qr_name='q', cr_name='c'):
 		self.circuit_size = circuit_size
 		self.gate_set = gate_set
+		self.qiskit_gate_set = qiskit_gate_set
 		self.qr_name = qr_name
 		self.cr_name = cr_name
 		self.quantumregister = QuantumRegister(self.circuit_size, self.qr_name)
 		self.classicalregister = ClassicalRegister(self.circuit_size, self.cr_name)
 		self.noise_model = self.get_noise_model()
-		self.backend = get_backend('qasm_simulator')
+		self.backend = Aer.get_backend('qasm_simulator')
 		self.step = 0.01
 		self.configuration_list = []
 		self.alpha = 0.99
@@ -207,19 +208,19 @@ class ATPG():
 				V_fault = []
 				for qb in range(self.circuit_size):
 					V_fault.append(Variation_fault(gate_type, [qb], ratio=ratio))
-				single_fault_list.append(V_fault)
+			single_fault_list.append(V_fault)
 
 			for bias in bias_list:
 				V_fault = []
 				for qb in range(self.circuit_size):
 					V_fault.append(Variation_fault(gate_type, [qb], bias=bias))
-				single_fault_list.append(V_fault)
+			single_fault_list.append(V_fault)
 
 			for threshold in threshold_list:
 				T_fault = []
 				for qb in range(self.circuit_size):
 					T_fault.append(Threshold_lopa(gate_type, [qb], threshold=threshold))
-				single_fault_list.append(T_fault)
+			single_fault_list.append(T_fault)
 
 		value = 0.05*np.pi
 		f = [[value, value, value, value, value, value], [value, value, -value, value, value, -value], [value, -value, value, value, -value, value] , [value, -value, -value, value, -value, -value],
@@ -269,7 +270,7 @@ class ATPG():
 
 	def get_test_configuration(self, single_fault_list, two_fault_list, initial_state=np.array([1, 0])):
 		configuration_list = []
-
+		#single_fault_list = [ratio_fault_list , bias_fault_list , threshold_fault_list]，所以應該要
 		for fault_type in single_fault_list:
 			for i in range(self.circuit_size):
 				template = self.generate_test_template(fault_type[i], np.array([1, 0]), self.get_single_gradient, cost_ratio=2)
@@ -384,6 +385,7 @@ class ATPG():
 		return new_configuration
 
 	def build_single_configuration(self, template, fault_list):
+		# template = [faulty_gate_list , faultfree_gate_list , ]
 		length = template[2]
 		qc_faulty_list = []
 		for num_circuit in range(self.circuit_size):
@@ -441,7 +443,7 @@ class ATPG():
 	def get_CNOT_gradient(self, fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list):
 		# for 2 qubit gate
 		# faultfre is a QuantumGate
-		faultfree = self.get_quantum_gate(gate_type=fault.gate_type, index=fault.index, parameter=[])
+		faultfree = self.get_quantum_gate(gate_type = fault.gate_type, index = fault.index, parameter = [])
 		# faulty is a list of QuantumGate
 		faulty = fault.get_faulty_gate(faultfree)
 		# this is a list 中間的參數是index
@@ -515,7 +517,10 @@ class ATPG():
 		# print("Start:",faulty[0][0].params)
 		faultfree_matrix = faultfree.gate.to_matrix()
 		faulty_matrix = faulty.gate.to_matrix()
-		parameter_list = [0, 0, 0]
+		# parameter_list should consider 參數數目
+		num = gate.__init__.__code__.co_argcount - len(gate.__init__.__defaults__) - 1
+		parameter_list = [0 for _ in range(num)]
+		#parameter_list = [0, 0, 0]
 
 		# print(faultfree[0])
 		for i in range(SEARCH_TIME):
@@ -542,8 +547,9 @@ class ATPG():
 		# print(faultfree_quantum_state, faulty_quantum_state)
 		return (faulty_gate_list, faultfree_gate_list, faulty_quantum_state, faultfree_quantum_state, repetition)
 
+	# 只對parameter list進行
 	def single_gradient(self, parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault):
-
+		# parameter_list = [0 , 0 , 0] 應該根據gate型態給予參數
 		score = vector_distance(
 				matrix_operation([U3(parameter_list), faultfree_matrix], faultfree_quantum_state, max_size=2), 
 				matrix_operation([U3(self.check_fault(fault, parameter_list)), faulty_matrix], faulty_quantum_state, max_size=2))
@@ -574,12 +580,12 @@ class ATPG():
 		return 
 
 	def check_fault(self, fault, parameter_list):
-		if(type(fault) == Variation_fault and fault.gate_type == Qgate.U3Gate):
+		if(type(fault) == Variation_fault and fault.gate_type in self.qiskit_gate_set):
 			res = []
 			for i in range(len(parameter_list)):
 				res.append(parameter_list[i]*fault.ratio[i]+fault.bias[i])
 			return res
-		elif(type(fault) == Threshold_lopa and fault.gate_type == Qgate.U3Gate):
+		elif(type(fault) == Threshold_lopa and fault.gate_type in self.qiskit_gate_set):
 			res = []
 			for i in range(len(parameter_list)):
 				res.append(fault.threshold[i] if parameter_list[i] > fault.threshold[i] else parameter_list[i])
@@ -593,7 +599,7 @@ class ATPG():
 			bias = []
 			for r in fault.ratio:
 				if r < 1:
-					ratio.append(2*np.pi)
+					ratio.append(2 * np.pi)
 				else:
 					ratio.append(0)
 				bias.append(0)
