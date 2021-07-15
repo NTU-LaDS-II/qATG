@@ -197,6 +197,7 @@ class ATPG():
 		self.beta = 0.9999
 		self.gate_set = gate_set
 		return
+
 	def get_gate_set(gate_type_list):
 
 		U_params = [0.25*pi, 0.25*pi, 0.25*pi]
@@ -548,15 +549,15 @@ class ATPG():
 			self.single_gradient(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
 		
 		# score = vector_distance(faultfree_quantum_state, faulty_quantum_state)
-		faulty_parameter = self.check_fault(fault, parameter_list)
-		faulty_gate_list.append(Qgate.U3Gate(faulty_parameter[0], faulty_parameter[1], faulty_parameter[2]))
+		faulty_parameter = self.faulty_activation_gate(fault, parameter_list)
+		faulty_gate_list = faulty_gate_list + U_to_gate_set_transpiler_to_gate_list(faulty_parameter)
 		faulty_gate_list.append(faulty.gate)
 		
 		faultfree_gate_list.append(Qgate.U3Gate(parameter_list[0], parameter_list[1], parameter_list[2]))
 		faultfree_gate_list.append(faultfree.gate)
 		# print(faulty_matrix)
 		faultfree_quantum_state = matrix_operation([U3(parameter_list), faultfree_matrix], faultfree_quantum_state, max_size=2)
-		faulty_quantum_state = matrix_operation([U3(self.check_fault(fault, parameter_list)), faulty_matrix], faulty_quantum_state, max_size=2)
+		faulty_quantum_state = matrix_operation([U3(self.faulty_activation_gate(fault, parameter_list)), faulty_matrix], faulty_quantum_state, max_size=2)
 		# print(faultfree_quantum_state, faulty_quantum_state)
 		faulty_quantum_state_ = to_probability(faulty_quantum_state)
 		faultfree_quantum_state_ = to_probability(faultfree_quantum_state)
@@ -573,20 +574,20 @@ class ATPG():
 		# parameter_list = [0 , 0 , 0] 應該根據gate型態給予參數
 		score = vector_distance(
 				matrix_operation([U3(parameter_list), faultfree_matrix], faultfree_quantum_state, max_size=2), 
-				matrix_operation([U3(self.check_fault(fault, parameter_list)), faulty_matrix], faulty_quantum_state, max_size=2))
+				matrix_operation([U3(self.faulty_activation_gate(fault, parameter_list)), faulty_matrix], faulty_quantum_state, max_size=2))
 		new_parameter_list = [0]*len(parameter_list)
 		# temp_value = 0
 		for i in range(len(parameter_list)):
 			parameter_list[i] += self.step
 			up_score = vector_distance(
 				matrix_operation([U3(parameter_list), faultfree_matrix], faultfree_quantum_state, max_size=2), 
-				matrix_operation([U3(self.check_fault(fault, parameter_list)), faulty_matrix], faulty_quantum_state, max_size=2))
+				matrix_operation([U3(self.faulty_activation_gate(fault, parameter_list)), faulty_matrix], faulty_quantum_state, max_size=2))
 
 			parameter_list[i] -= 2*self.step
 
 			down_score = vector_distance(
 				matrix_operation([U3(parameter_list), faultfree_matrix], faultfree_quantum_state, max_size=2), 
-				matrix_operation([U3(self.check_fault(fault, parameter_list)), faulty_matrix], faulty_quantum_state, max_size=2))
+				matrix_operation([U3(self.faulty_activation_gate(fault, parameter_list)), faulty_matrix], faulty_quantum_state, max_size=2))
 			parameter_list[i] += self.step
 
 
@@ -599,20 +600,52 @@ class ATPG():
 		for i in range(len(parameter_list)):
 			parameter_list[i] += new_parameter_list[i]
 		return 
+	
 	# fault.gate_type 要修正
-	def check_fault(self, fault, parameter_list):
-		if(type(fault) == Variation_fault and fault.gate_type in self.qiskit_gate_set):
-			res = []
-			for i in range(len(parameter_list)):
-				res.append(parameter_list[i]*fault.ratio[i]+fault.bias[i])
-			return res
-		elif(type(fault) == Threshold_lopa and fault.gate_type in self.qiskit_gate_set):
-			res = []
-			for i in range(len(parameter_list)):
-				res.append(fault.threshold[i] if parameter_list[i] > fault.threshold[i] else parameter_list[i])
-			return res
-		else:
-			return parameter_list
+	def faulty_activation_gate(self, fault, parameter_list):
+		# first transpile
+		transpile_result_ckt = self.U_to_gate_set_transpiler(parameter_list)
+		if type(fault) == Variation_fault:
+			for gate, _, _ in transpile_result_ckt.data:
+				if type(gate) == fault.gate_type:
+					for i in range(len(gate.params)):
+						gate.params[i] = gate.params[i]*fault.ratio[i]+fault.bias[i]
+		elif type(fault) == Threshold_lopa:
+			for gate, _, _ in transpile_result_ckt.data:
+				if type(gate) == fault.gate_type:
+					for i in range(len(gate.params)):
+						gate.params[i] = fault.threshold[i] if gate.params[i] > fault.threshold[i] else gate.params[i]
+		# transpile back
+		return gate_set_to_U_params_transpiler(transpile_result_ckt)
+		# if(type(fault) == Variation_fault and fault.gate_type in self.qiskit_gate_set):
+		# 	res = []
+		# 	for i in range(len(parameter_list)):
+		# 		res.append(parameter_list[i]*fault.ratio[i]+fault.bias[i])
+		# 	return res
+		# elif(type(fault) == Threshold_lopa and fault.gate_type in self.qiskit_gate_set):
+		# 	res = []
+		# 	for i in range(len(parameter_list)):
+		# 		res.append(fault.threshold[i] if parameter_list[i] > fault.threshold[i] else parameter_list[i])
+		# 	return res
+		# else:
+		# 	return parameter_list
+
+	def U_to_gate_set_transpiler_to_gate_list(U_params):
+		ckt = self.U_to_gate_set_transpiler(U_params)
+		return [gate for gate, _, _ in ckt.data]
+
+	def U_to_gate_set_transpiler(U_params):
+		basis_gates = [gate.__name__[:-4].lower() for gate in self.gate_set]
+		q = QuantumCircuit(1)
+		q.u(*U_params, 0)
+		result_ckt = transpile(q, basis_gates = basis_gates, optimization_level = 3)
+		# result_gates = [gate for gate, _, _ in result_ckt.data]
+		return result_ckt
+
+	def gate_set_to_U_params_transpiler(ckt):
+		result_ckt = transpile(ckt, basis_gates = 'u3', optimization_level = 3)
+		# should be only one gate
+		return [param.__float__() for param in result_ckt.data[0][0].params]
 
 	def get_activation_gate(self, fault):
 		if(type(fault) == Variation_fault):
@@ -716,7 +749,7 @@ class ATPG():
 
 		# Add errors to noise model
 		noise_model = NoiseModel()
-		noise_model.add_all_qubit_quantum_error(error_1, ['u1', 'u2', 'u3'])
+		noise_model.add_all_qubit_quantum_error(error_1, [gate.__name__[:-4].lower() for gate in self.gate_set])
 		noise_model.add_all_qubit_quantum_error(error_2, ['cx'])
 		noise_model.add_all_qubit_readout_error(error_3)
 
