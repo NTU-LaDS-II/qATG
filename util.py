@@ -10,6 +10,34 @@ SEARCH_TIME = 700
 sample_time = 10000
 threshold = 0.01
 r = 0.1
+def get_qiskit_gate(gate_tye):
+	
+	if gate_type == "RGate":
+		return Qgate.RGate
+	elif gate_type == "RXGate":
+		return Qgate.RXGate
+	elif gate_type == "RXXGate":
+		return Qgate.RXXGate
+	elif gate_type == "RYGate":
+		return Qgate.RYGate
+	elif gate_type == "RZGate":
+		return Qgate.RZGate
+	elif gate_type == "RZZGate":
+		return Qgate.RZZGate
+	elif gate_type == "XGate":
+		return Qgate.XGate
+	elif gate_type == "YGate":
+		return Qgate.YGate
+	elif gate_type == "ZGate":
+		return Qgate.ZGate
+	elif gate_type == "U1Gate":
+		return Qgate.U1Gate
+	elif gate_type == "U2Gate":
+		return Qgate.U2Gate
+	elif gate_type == "U3Gate":
+		return Qgate.U3Gate
+	elif gate_type == "SXGate":
+		return Qgate.SXGate
 
 def get_params_list(gate):
 	# gate is a gate

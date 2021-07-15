@@ -13,9 +13,13 @@ filterwarnings('ignore')
 # initial_state = np.dot(qiskit.extensions.standard.u2.U2Gate(0, np.pi).to_matrix(), initial_state)
 # print(qiskit.extensions.standard.x.CnotGate().to_matrix())
 # print(initial_state)
-gate_set  , qiskit_gate_set = get_gate_set()
+gate_set = []
+num_of_gate_type = int(input())
+for i in range(num_of_gate_type):
+	gate_type = input()
+	gate_set.append(get_qiskit_gate(gate_type))
 
-generator = ATPG(circuit_size = 5, gate_set = gate_set , qiskit_gate_set = qiskit_gate_set)
+generator = ATPG(circuit_size = 5, gate_set = gate_set)
 generator.alpha = 0.99
 generator.beta = 0.999
 

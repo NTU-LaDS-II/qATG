@@ -179,10 +179,10 @@ class Configuration():
 		print(" # of data:", len(self.real_faultfree_distribution_2))
 
 class ATPG():
-	def __init__(self, circuit_size, gate_set, qiskit_gate_set, qr_name='q', cr_name='c'):
+	def __init__(self, circuit_size, gate_set, qr_name='q', cr_name='c'):
 		self.circuit_size = circuit_size
-		self.gate_set = gate_set
-		self.qiskit_gate_set = qiskit_gate_set
+		self.gate_set = get_gate_set(gate_set)
+		
 		self.qr_name = qr_name
 		self.cr_name = cr_name
 		self.quantumregister = QuantumRegister(self.circuit_size, self.qr_name)
@@ -195,6 +195,26 @@ class ATPG():
 		self.beta = 0.9999
 		self.gate_set = gate_set
 		return
+	def get_gate_set(gate_type_list):
+
+		U_params = [0.25*pi, 0.25*pi, 0.25*pi]
+		# gate_set = [Qgate.RZGate, Qgate.SXGate]
+		gate_set = gate_type_list
+		basis_gates = [gate.__name__[:-4].lower() for gate in gate_set]
+		q = QuantumCircuit(1)
+		q.u(*U_params, 0)
+		result_ckt = transpile(q, basis_gates = basis_gates, optimization_level = 3)
+		result_gates = [gate for gate, _, _ in result_ckt.data]
+		# DO NOT REMOVE THE COMMENT
+		# another more safe method
+		# result_gates = []
+		# for gate, _, _ in result_ckt.data:
+			# new_params = [param.__float__() for param in gate.params]
+			# new_gate = gate_set[basis_gates.index(gate.__class__.__name__[:-4].lower())]
+			# result_gates.append(new_gate(*new_params))
+		# return result_gates
+		print(result_gates) 
+		return result_gates
 
 	def get_fault_list(self , coupling_map):
 		single_fault_list = []
@@ -506,6 +526,7 @@ class ATPG():
 		return 
 	
 	def get_single_gradient(self, fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list):
+		# get best parameter list for activation gate
 		#for 1 qubit gate
 		#faultfree is a QuantumGate
 		faultfree = self.get_activation_gate(fault)
@@ -517,10 +538,8 @@ class ATPG():
 		# print("Start:",faulty[0][0].params)
 		faultfree_matrix = faultfree.gate.to_matrix()
 		faulty_matrix = faulty.gate.to_matrix()
-		# parameter_list should consider 參數數目
-		num = gate.__init__.__code__.co_argcount - len(gate.__init__.__defaults__) - 1
-		parameter_list = [0 for _ in range(num)]
-		#parameter_list = [0, 0, 0]
+		# parameter list for activation gate
+		parameter_list = [0, 0, 0]
 
 		# print(faultfree[0])
 		for i in range(SEARCH_TIME):
@@ -578,7 +597,7 @@ class ATPG():
 		for i in range(len(parameter_list)):
 			parameter_list[i] += new_parameter_list[i]
 		return 
-
+	# fault.gate_type 要修正
 	def check_fault(self, fault, parameter_list):
 		if(type(fault) == Variation_fault and fault.gate_type in self.qiskit_gate_set):
 			res = []
