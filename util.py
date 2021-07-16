@@ -3,14 +3,14 @@ import numpy as np
 from copy import deepcopy
 from QuantumGate import *
 from scipy.stats import chi2, ncx2
-
+import qiskit.circuit.library as Qgate
 INT_MIN = 1E-100
 INT_MAX = 1E15
 SEARCH_TIME = 700
 sample_time = 10000
 threshold = 0.01
 r = 0.1
-def get_qiskit_gate(gate_tye):
+def get_qiskit_gate(gate_type):
 	
 	if gate_type == "RGate":
 		return Qgate.RGate
