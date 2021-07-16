@@ -6,8 +6,8 @@ from numpy import pi
 def get_gate_set(gate_type_list):
 
 	U_params = [0.25*pi, 0.25*pi, 0.25*pi]
-	# gate_set = [Qgate.RZGate, Qgate.SXGate]
-	gate_set = gate_type_list
+	#gate_set = gate_type_list
+	gate_set = [Qgate.RZGate, Qgate.SXGate]
 	basis_gates = [gate.__name__[:-4].lower() for gate in gate_set]
 	q = QuantumCircuit(1)
 	q.u(*U_params, 0)
