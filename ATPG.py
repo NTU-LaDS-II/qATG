@@ -530,7 +530,7 @@ class ATPG():
 		# score = vector_distance(faultfree_quantum_state, faulty_quantum_state)
 		faulty_parameter = self.get_parameter_list_after_transpile_from_gate_set(fault, parameter_list)
 		# faulty_gate_list.append(Qgate.U3Gate(faulty_parameter[0], faulty_parameter[1], faulty_parameter[2]))
-		faultty_gate_list = faulty_gate_list + self.get_gate_set_after_transpile_from_U(faulty_parameter)
+		faulty_gate_list = faulty_gate_list + self.get_gate_set_after_transpile_from_U(faulty_parameter)
 		faulty_gate_list.append(faulty.gate)
 		
 		#faultfree_gate_list.append(Qgate.U3Gate(parameter_list[0], parameter_list[1], parameter_list[2]))
