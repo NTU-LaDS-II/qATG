@@ -621,49 +621,6 @@ class ATPG():
 		for i in range(len(parameter_list)):
 			parameter_list[i] += new_parameter_list[i]
 		return 
-	def get_gate_set_after_transpile_from_U(self , parameter_list):
-
-		U_params = parameter_list
-		# gate_set = [Qgate.RZGate, Qgate.SXGate]
-		gate_set = self.gate_set
-		basis_gates = [gate.__name__[:-4].lower() for gate in gate_set]
-		q = QuantumCircuit(1)
-		q.u(*U_params, 0)
-		result_ckt = transpile(q, basis_gates = basis_gates, optimization_level = 3)
-		result_gates = [gate for gate, _, _ in result_ckt.data]
-		# DO NOT REMOVE THE COMMENT
-		# another more safe method
-		# result_gates = []
-		# for gate, _, _ in result_ckt.data:
-			# new_params = [param.__float__() for param in gate.params]
-			# new_gate = gate_set[basis_gates.index(gate.__class__.__name__[:-4].lower())]
-			# result_gates.append(new_gate(*new_params))
-		# return result_gates
-		#print(result_gates) 
-		return result_gates
-
-	def get_U_params_after_transpile_from_gate_set(self , result_gate_gate):
-		q = QuantumCircuit(1)
-		apply_qiskit_gate(q , result_gate_gate)
-		result_ckt = transpile(q , basis_gates = ["u"] , optimization_level = 3)
-		return [param.__float__() for param in result_ckt.data[0][0].params]
-	def get_parameter_list_after_transpile_from_gate_set(self, fault, parameter_list):
-		# fault.gate_type is qiskit gate
-		# qiskit gate = [gate , pos , []]
-		# gate_set is a list of qiskit gate
-		# step:
-		# 1.先把fault傳進去，得到faulty qiskit gate
-		# 2.得到修正過的gate sequence後，在transpile回U3Gate
-		# 3.return回這個U3Gate的params
-
-		if(type(fault) == Variation_fault and fault.gate_type != Qgate.UGate):
-			result_gate_set = self.get_gate_set_after_transpile_from_U(parameter_list)
-			for gate in result_gate_set:
-				if type(gate) == fault.gate_type:
-					for i in range(len(fault.ratio)):
-						gate.params[i] = fault.ratio[i]*gate.params[i] + fault.bias[i]
-			return self.get_U_params_after_transpile_from_gate_set(result_gate_set)
-			
 
 	def faulty_activation_gate(self, fault, parameter_list):
 		# first transpile
