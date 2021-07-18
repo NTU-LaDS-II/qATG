@@ -195,11 +195,9 @@ class ATPG():
 		self.configuration_list = []
 		self.alpha = 0.99
 		self.beta = 0.9999
-		self.gate_set = gate_set
+		
 		return
-
 	
-
 	def get_fault_list(self , coupling_map):
 		single_fault_list = []
 		two_fault_list = []
@@ -530,16 +528,18 @@ class ATPG():
 			self.single_gradient(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
 		
 		# score = vector_distance(faultfree_quantum_state, faulty_quantum_state)
-		faulty_parameter = self.faulty_activation_gate(fault, parameter_list)
-		faulty_gate_list = faulty_gate_list + self.U_to_gate_set_transpiler_to_gate_list(faulty_parameter)
+		faulty_parameter = self.get_parameter_list_after_transpile_from_gate_set(fault, parameter_list)
+		# faulty_gate_list.append(Qgate.U3Gate(faulty_parameter[0], faulty_parameter[1], faulty_parameter[2]))
+		faulty_gate_list = faulty_gate_list + self.get_gate_set_after_transpile_from_U(faulty_parameter)
 		faulty_gate_list.append(faulty.gate)
 		
-		# faultfree_gate_list.append(Qgate.U3Gate(parameter_list[0], parameter_list[1], parameter_list[2]))
-		faultfree_gate_list = faultfree_gate_list + self.U_to_gate_set_transpiler_to_gate_list(parameter_list)
+		#faultfree_gate_list.append(Qgate.U3Gate(parameter_list[0], parameter_list[1], parameter_list[2]))
+		# parameter_list is fault free
+		faultfree_gate_list = faultfree_gate_list + self.get_gate_set_after_transpile_from_U(parameter_list)
 		faultfree_gate_list.append(faultfree.gate)
 		# print(faulty_matrix)
 		faultfree_quantum_state = matrix_operation([U3(parameter_list), faultfree_matrix], faultfree_quantum_state, max_size=2)
-		faulty_quantum_state = matrix_operation([U3(self.faulty_activation_gate(fault, parameter_list)), faulty_matrix], faulty_quantum_state, max_size=2)
+		faulty_quantum_state = matrix_operation([U3(self.get_parameter_list_after_transpile_from_gate_set(fault, parameter_list)), faulty_matrix], faulty_quantum_state, max_size=2)
 		# print(faultfree_quantum_state, faulty_quantum_state)
 		faulty_quantum_state_ = to_probability(faulty_quantum_state)
 		faultfree_quantum_state_ = to_probability(faultfree_quantum_state)
@@ -556,20 +556,20 @@ class ATPG():
 		# parameter_list = [0 , 0 , 0] 應該根據gate型態給予參數
 		score = vector_distance(
 				matrix_operation([U3(parameter_list), faultfree_matrix], faultfree_quantum_state, max_size=2), 
-				matrix_operation([U3(self.faulty_activation_gate(fault, parameter_list)), faulty_matrix], faulty_quantum_state, max_size=2))
+				matrix_operation([U3(self.get_parameter_list_after_transpile_from_gate_set(fault, parameter_list)), faulty_matrix], faulty_quantum_state, max_size=2))
 		new_parameter_list = [0]*len(parameter_list)
 		# temp_value = 0
 		for i in range(len(parameter_list)):
 			parameter_list[i] += self.step
 			up_score = vector_distance(
 				matrix_operation([U3(parameter_list), faultfree_matrix], faultfree_quantum_state, max_size=2), 
-				matrix_operation([U3(self.faulty_activation_gate(fault, parameter_list)), faulty_matrix], faulty_quantum_state, max_size=2))
+				matrix_operation([U3(self.get_parameter_list_after_transpile_from_gate_set(fault, parameter_list)), faulty_matrix], faulty_quantum_state, max_size=2))
 
 			parameter_list[i] -= 2*self.step
 
 			down_score = vector_distance(
 				matrix_operation([U3(parameter_list), faultfree_matrix], faultfree_quantum_state, max_size=2), 
-				matrix_operation([U3(self.faulty_activation_gate(fault, parameter_list)), faulty_matrix], faulty_quantum_state, max_size=2))
+				matrix_operation([U3(self.get_parameter_list_after_transpile_from_gate_set(fault, parameter_list)), faulty_matrix], faulty_quantum_state, max_size=2))
 			parameter_list[i] += self.step
 
 
@@ -582,52 +582,66 @@ class ATPG():
 		for i in range(len(parameter_list)):
 			parameter_list[i] += new_parameter_list[i]
 		return 
-	
-	# fault.gate_type 要修正
-	def faulty_activation_gate(self, fault, parameter_list):
-		# first transpile
-		transpile_result_ckt = self.U_to_gate_set_transpiler(parameter_list)
-		if type(fault) == Variation_fault:
-			for gate, _, _ in transpile_result_ckt.data:
-				if type(gate) == fault.gate_type:
-					for i in range(len(gate.params)):
-						gate.params[i] = gate.params[i]*fault.ratio[i]+fault.bias[i]
-		elif type(fault) == Threshold_lopa:
-			for gate, _, _ in transpile_result_ckt.data:
-				if type(gate) == fault.gate_type:
-					for i in range(len(gate.params)):
-						gate.params[i] = fault.threshold[i] if gate.params[i] > fault.threshold[i] else gate.params[i]
-		# transpile back
-		return self.gate_set_to_U_params_transpiler(transpile_result_ckt)
-		# if(type(fault) == Variation_fault and fault.gate_type in self.qiskit_gate_set):
-		# 	res = []
-		# 	for i in range(len(parameter_list)):
-		# 		res.append(parameter_list[i]*fault.ratio[i]+fault.bias[i])
-		# 	return res
-		# elif(type(fault) == Threshold_lopa and fault.gate_type in self.qiskit_gate_set):
-		# 	res = []
-		# 	for i in range(len(parameter_list)):
-		# 		res.append(fault.threshold[i] if parameter_list[i] > fault.threshold[i] else parameter_list[i])
-		# 	return res
-		# else:
-		# 	return parameter_list
+	def get_gate_set_after_transpile_from_U(self , parameter_list):
 
-	def U_to_gate_set_transpiler_to_gate_list(self, U_params):
-		ckt = self.U_to_gate_set_transpiler(U_params)
-		return [gate for gate, _, _ in ckt.data]
-
-	def U_to_gate_set_transpiler(self , U_params):
-		basis_gates = [gate.__name__[:-4].lower() for gate in self.gate_set]
+		U_params = parameter_list
+		# gate_set = [Qgate.RZGate, Qgate.SXGate]
+		gate_set = self.gate_set
+		basis_gates = [gate.__name__[:-4].lower() for gate in gate_set]
 		q = QuantumCircuit(1)
 		q.u(*U_params, 0)
 		result_ckt = transpile(q, basis_gates = basis_gates, optimization_level = 3)
-		# result_gates = [gate for gate, _, _ in result_ckt.data]
-		return result_ckt
+		result_gates = [gate for gate, _, _ in result_ckt.data]
+		# DO NOT REMOVE THE COMMENT
+		# another more safe method
+		# result_gates = []
+		# for gate, _, _ in result_ckt.data:
+			# new_params = [param.__float__() for param in gate.params]
+			# new_gate = gate_set[basis_gates.index(gate.__class__.__name__[:-4].lower())]
+			# result_gates.append(new_gate(*new_params))
+		# return result_gates
+		#print(result_gates) 
+		return result_gates
 
-	def gate_set_to_U_params_transpiler(self , ckt):
-		result_ckt = transpile(ckt, basis_gates = 'u3', optimization_level = 3)
-		# should be only one gate
+	def get_U_params_after_transpile_from_gate_set(self , result_gate_gate):
+		q = QuantumCircuit(1)
+		apply_qiskit_gate(q , result_gate_gate)
+		result_ckt = transpile(q , basis_gates = ["u"] , optimization_level = 3)
 		return [param.__float__() for param in result_ckt.data[0][0].params]
+	def get_parameter_list_after_transpile_from_gate_set(self, fault, parameter_list):
+		# fault.gate_type is qiskit gate
+		# qiskit gate = [gate , pos , []]
+		# gate_set is a list of qiskit gate
+		# step:
+		# 1.先把fault傳進去，得到faulty qiskit gate
+		# 2.得到修正過的gate sequence後，在transpile回U3Gate
+		# 3.return回這個U3Gate的params
+
+		if(type(fault) == Variation_fault and fault.gate_type != Qgate.UGate):
+			result_gate_set = self.get_gate_set_after_transpile_from_U(parameter_list)
+			for gate in result_gate_set:
+				if type(gate) == fault.gate_type:
+					for i in range(len(fault.ratio)):
+						gate.params[i] = fault.ratio[i]*gate.params[i] + fault.bias[i]
+			return self.get_U_params_after_transpile_from_gate_set(result_gate_set)
+			
+
+		elif(type(fault) == Threshold_lopa and fault.gate_type != Qgate.UGate):
+			result_gate_set = self.get_gate_set_after_transpile_from_U(parameter_list)
+			for gate in result_gate_set:
+				if type(gate) == fault.gate_type:
+					for i in range(len(fault.threshold)):
+						gate.params[i] = fault.threshold[i] if gate.params[i] > fault.threshold[i] else gate.params[i]
+			return self.get_U_params_after_transpile_from_gate_set(result_gate_set)
+			
+		elif(fault.gate_type == Qgate.UGate):
+			if(type(fault) == Variation_fault):
+				for i in range(len(fault.ratio)):
+					parameter_list[i] = fault.ratio[i] * parameter_list[i] + fault.bias[i]
+			else:
+				for i in range(len(fault.threshold)):
+					parameter_list[i] = fault.threshold[i] if parameter_list[i] > fault.threshold[i] else parameter_list[i]
+			return parameter_list
 
 	def get_activation_gate(self, fault):
 		if(type(fault) == Variation_fault):
@@ -651,7 +665,7 @@ class ATPG():
 		elif(type(fault) == Qgate.CXGate):
 			return self.get_quantum_gate(gate_type=fault.gate_type, index=fault.index, parameter= [])
 
-	def simulate_configuration(self, configuration, shots=200000):
+	def simulate_configuration(self, configuration, shots = 200000):
 		configuration.repetition_list = []
 		configuration.sim_faultfree_distribution = []
 		configuration.sim_faulty_distribution_list = []
@@ -731,7 +745,7 @@ class ATPG():
 
 		# Add errors to noise model
 		noise_model = NoiseModel()
-		noise_model.add_all_qubit_quantum_error(error_1, [gate.__name__[:-4].lower() for gate in self.gate_set])
+		noise_model.add_all_qubit_quantum_error(error_1, ['u1', 'u2', 'u3'])
 		noise_model.add_all_qubit_quantum_error(error_2, ['cx'])
 		noise_model.add_all_qubit_readout_error(error_3)
 
