@@ -45,13 +45,32 @@ class CNOT_variation_fault(Fault):
 ############ U ratio & bias ############
 #ratio and bias are list and their length depend on which type of gate it is
 class Variation_fault(Fault):
-	def __init__(self, gate_type, index, ratio=[1, 1, 1], bias=[0, 0, 0]):
-		# if(len(ratio)!=3):
-		#	print("size of ratio should be 3")
-		#	exit() 
-		# if(len(bias)!=3):
-		#	print("size of bias should be 3")
-		#	exit() 
+	def __init__(self, gate_type, index, ratio = None, bias = None):
+		require_length = gate_type.__init__.__code__.co_argcount - len(gate_type.__init__.__defaults__) - 1
+		if not ratio and not bias:
+			print("Variation Fault: init error with two none value")
+			exit()
+		elif not ratio:
+			# check bias
+			if len(bias) != require_length:
+				print("Variation Fault: init error with wrong bias length")
+				exit()
+			ratio = [1] * len(bias)
+		elif not bias:
+			# check ratio
+			if len(ratio) != require_length:
+				print("Variation Fault: init error with wrong ratio length")
+				exit()
+			bias = [0] * len(ratio)
+		else:
+			# check ratio
+			if len(ratio) != require_length:
+				print("Variation Fault: init error with wrong ratio length")
+				exit()
+			# check bias
+			if len(bias) != require_length:
+				print("Variation Fault: init error with wrong bias length")
+				exit()
 		description = gate_type.__name__
 		description += ' variation fault at '+str(index[0])+', ratio parameter:'
 		for i in ratio:
@@ -75,11 +94,15 @@ class Variation_fault(Fault):
 
 ############ U low pass ############
 class Threshold_lopa(Fault):
-	def __init__(self, gate_type, index, threshold=[pi*2, pi*2, pi*2]):
-
-		# if(len(threshold)!=3):
-		#	print("size of threshold should be 3")
-		#	exit()
+	def __init__(self, gate_type, index, threshold = None):
+		require_length = gate_type.__init__.__code__.co_argcount - len(gate_type.__init__.__defaults__) - 1
+		if not threshold:
+			threshold = [2*pi] * require_length
+		else:
+			# check threshold
+			if len(threshold) != require_length:
+				print("Threshold lowpass error with wrong threshold length")
+				exit()
 		description = gate_type.__name__
 		description += ' threshold fault at '+str(index[0])+', threshold parameter:'
 		for i in threshold:
