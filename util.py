@@ -1,6 +1,7 @@
 from math import ceil
 import numpy as np
 from copy import deepcopy
+import qiskit.circuit.library as Qgate
 from QuantumGate import *
 from scipy.stats import chi2, ncx2
 
@@ -10,6 +11,62 @@ SEARCH_TIME = 700
 sample_time = 10000
 threshold = 0.01
 r = 0.1
+def apply_qiskit_gate(circ , temp_gate_set):
+	for gate in temp_gate_set:
+		if type(gate) == Qgate.RGate:
+			circ.r(*gate.params , 0)
+		elif type(gate) == Qgate.RXGate:
+			circ.rx(*gate.params , 0)
+		elif type(gate) == Qgate.RXXGate:
+			circ.rxx(*gate.params , 0)
+		elif type(gate) == Qgate.RYGate:
+			circ.ry(*gate.params , 0)
+		elif type(gate) == Qgate.RZGate:
+			circ.rz(*gate.params , 0)
+		elif type(gate) == Qgate.RZZGate:
+			circ.rzz(*gate.params , 0)
+		elif type(gate) == Qgate.XGate:
+			circ.x(*gate.params , 0)
+		elif type(gate) == Qgate.YGate:
+			circ.y(*gate.params , 0)
+		elif type(gate) == Qgate.ZGate:
+			circ.z(*gate.params , 0)
+		elif type(gate) == Qgate.U1Gate:
+			circ.u1(*gate.params , 0)
+		elif type(gate) == Qgate.U2Gate:
+			circ.u2(*gate.params , 0)
+		elif type(gate) == Qgate.U3Gate:
+			circ.u3(*gate.params , 0)
+		elif type(gate) == Qgate.SXGate:
+			circ.sx(*gate.params , 0)
+def get_qiskit_gate(gate_type):
+
+	if gate_type == "RGate":
+		return Qgate.RGate
+	elif gate_type == "RXGate":
+		return Qgate.RXGate
+	elif gate_type == "RXXGate":
+		return Qgate.RXXGate
+	elif gate_type == "RYGate":
+		return Qgate.RYGate
+	elif gate_type == "RZGate":
+		return Qgate.RZGate
+	elif gate_type == "RZZGate":
+		return Qgate.RZZGate
+	elif gate_type == "XGate":
+		return Qgate.XGate
+	elif gate_type == "YGate":
+		return Qgate.YGate
+	elif gate_type == "ZGate":
+		return Qgate.ZGate
+	elif gate_type == "U1Gate":
+		return Qgate.U1Gate
+	elif gate_type == "U2Gate":
+		return Qgate.U2Gate
+	elif gate_type == "U3Gate":
+		return Qgate.U3Gate
+	elif gate_type == "SXGate":
+		return Qgate.SXGate
 
 def get_params_list(gate):
 	# gate is a gate

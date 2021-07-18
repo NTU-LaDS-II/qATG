@@ -61,3 +61,6 @@ def annealing_for_single_qubit(self , parameter_list , faulty_matrix , faultfree
 			T /= r
 	parameter_list = best_parameter_list
 	return
+
+
+

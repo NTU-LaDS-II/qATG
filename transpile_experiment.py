@@ -4,6 +4,7 @@ from qiskit import transpile
 from qiskit.circuit import Parameter
 from numpy import pi
 
+
 # U_params = [0.25*pi, 0.25*pi, 0.25*pi]
 # gate_set = [Qgate.RZGate, Qgate.SXGate]
 
@@ -13,6 +14,7 @@ from numpy import pi
 # result_ckt = transpile(q, basis_gates = basis_gates, optimization_level = 3)
 # result_gates = [gate for gate, _, _ in result_ckt.data]
 
+
 # DO NOT REMOVE THE COMMENT
 # another more safe method
 # result_gates = []
@@ -21,6 +23,7 @@ from numpy import pi
 	# new_gate = gate_set[basis_gates.index(gate.__class__.__name__[:-4].lower())]
 	# result_gates.append(new_gate(*new_params))
 # return result_gates
+
 
 # print(result_gates)
 
@@ -64,3 +67,4 @@ ckt = transpile(q, basis_gates = ['sx', 'rz'], optimization_level = 3)
 
 
 print(new_ckt.data)
+
