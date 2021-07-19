@@ -1,4 +1,4 @@
-from math import ceil
+from math import ceil, exp
 import numpy as np
 from copy import deepcopy
 import qiskit.circuit.library as Qgate
@@ -7,10 +7,16 @@ from scipy.stats import chi2, ncx2
 
 INT_MIN = 1E-100
 INT_MAX = 1E15
-SEARCH_TIME = 700
+SEARCH_TIME = 1000
 sample_time = 10000
 threshold = 0.01
 r = 0.1
+
+T_init = 2.0
+T_min = 0.8
+T_ratio = (T_min/T_init)**(1/SEARCH_TIME)
+# T_ratio = 0.9
+step_ratio = 0.99
 
 def get_params_list(gate):
 	# gate is a gate

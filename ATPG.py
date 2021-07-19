@@ -1,6 +1,6 @@
 import numpy as np
 # import qiskit
-# import math
+import math
 from Fault import *
 from Gate import *
 from scipy.stats import chi2, ncx2
@@ -222,19 +222,19 @@ class ATPG():
 				V_fault = []
 				for qb in range(self.circuit_size):
 					V_fault.append(Variation_fault(gate_type, [qb], ratio=ratio))
-			single_fault_list.append(V_fault)
+				single_fault_list.append(V_fault)
 
 			for bias in bias_list:
 				V_fault = []
 				for qb in range(self.circuit_size):
 					V_fault.append(Variation_fault(gate_type, [qb], bias=bias))
-			single_fault_list.append(V_fault)
+				single_fault_list.append(V_fault)
 
 			for threshold in threshold_list:
 				T_fault = []
 				for qb in range(self.circuit_size):
 					T_fault.append(Threshold_lopa(gate_type, [qb], threshold=threshold))
-			single_fault_list.append(T_fault)
+				single_fault_list.append(T_fault)
 
 		value = 0.05*np.pi
 		f = [[value, value, value, value, value, value], [value, value, -value, value, value, -value], [value, -value, value, value, -value, value] , [value, -value, -value, value, -value, -value],
@@ -285,25 +285,25 @@ class ATPG():
 	def get_test_configuration(self, single_fault_list, two_fault_list, initial_state=np.array([1, 0])):
 		configuration_list = []
 		#single_fault_list = [ratio_fault_list , bias_fault_list , threshold_fault_list]，所以應該要
-		for fault_type in single_fault_list:
-			# for i in range(self.circuit_size):
-			# TODO Potential error
-			for i in range(1):
-				template = self.generate_test_template(fault_type[i], np.array([1, 0]), self.get_single_gradient, cost_ratio=2)
-				configuration = self.build_single_configuration(template, fault_type)
-				self.simulate_configuration(configuration)
-				configuration_list.append(configuration)
-		print("finish build single configuration")
+		# for fault_type in single_fault_list:
+		# 	# for i in range(self.circuit_size):
+		# 	# TODO Potential error
+		# 	for i in range(1):
+		# 		template = self.generate_test_template(fault_type[i], np.array([1, 0]), self.get_single_optimal_method, cost_ratio=2)
+		# 		configuration = self.build_single_configuration(template, fault_type)
+		# 		self.simulate_configuration(configuration)
+		# 		configuration_list.append(configuration)
+		# print("finish build single configuration")
 
-		# if two_fault_list:
-		# 	for fault_type in two_fault_list:
-		# 		template = self.generate_test_template(fault_type[0][0], np.array([1, 0, 0, 0]), self.get_CNOT_gradient, cost_ratio=2)
-		# 		for fault_list in fault_type:
-		# 			configuration = self.build_two_configuration(template, fault_list)
-		# 			self.simulate_configuration(configuration)
-		# 			configuration_list.append(configuration)
-		# 		# break
-		# print("finish build two configuration")
+		if two_fault_list:
+			for fault_type in two_fault_list:
+				template = self.generate_test_template(fault_type[0][0], np.array([1, 0, 0, 0]), self.get_CNOT_optimal_method, cost_ratio=2)
+				for fault_list in fault_type:
+					configuration = self.build_two_configuration(template, fault_list)
+					self.simulate_configuration(configuration)
+					configuration_list.append(configuration)
+				# break
+		print("finish build two configuration")
 
 		test_cost = 0
 		initial_time = 0
@@ -476,7 +476,7 @@ class ATPG():
 				print("\t", faultfree_gates.__class__.__name__, [param.__float__() for param in faultfree_gates.params])
 		return (faulty_gate_list, faultfree_gate_list, (len(faultfree_gate_list)))
 
-	def get_CNOT_gradient(self, fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list):
+	def get_CNOT_optimal_method(self, fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list):
 		# for 2 qubit gate
 		# faultfre is a QuantumGate
 		faultfree = self.get_quantum_gate(gate_type = fault.gate_type, index = fault.index, parameter = [])
@@ -492,8 +492,9 @@ class ATPG():
 		faulty_matrix = np.dot(faulty_matrix, np.kron(np.eye(2), faulty[2].gate.to_matrix()))
 
 		parameter_list = [0, 0, 0, 0, 0, 0]
-		for i in range(SEARCH_TIME):
-			self.two_gradient(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state)
+		# for i in range(SEARCH_TIME):
+			# self.two_gradient(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state)
+		self.two_annealing(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state)
 		# faultfree_gate_list.append([Qgate.U3Gate(parameter_list[0], parameter_list[1], parameter_list[2]), Qgate.U3Gate(parameter_list[3], parameter_list[4], parameter_list[5])])
 		faultfree_gate_list.append(self.U_to_gate_set_transpiler_to_gate_list(parameter_list[0:3]) + self.U_to_gate_set_transpiler_to_gate_list(parameter_list[3:]))
 		faultfree_gate_list.append(Qgate.CXGate())
@@ -542,8 +543,60 @@ class ATPG():
 			parameter_list[i] += new_parameter_list[i]
 
 		return 
+
+	def two_annealing(self, parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state):
+		def score(parameters):
+			return vector_distance(
+				matrix_operation([[U3(parameters[0:3]), U3(parameters[3:6])], faultfree_matrix], faultfree_quantum_state), 
+				matrix_operation([[U3(parameters[0:3]), U3(parameters[3:6])], faulty_matrix], faulty_quantum_state))
+
+		current_sol = parameter_list
+		best_sol = None
+		best_score = INT_MIN
+		T = T_init
+		step = self.step
+		anneal_times = 0
+
+		while T > T_min:
+			current_score = score(current_sol)
+			for i in range(len(current_sol)):
+				current_sol[i] += step
+				up_score = score(current_sol)
+				current_sol[i] -= step*2
+				down_score = score(current_sol)
+				current_sol[i] += step
+
+				if up_score == current_score and down_score == current_score:
+					luck = random.random()
+					if luck < 1/3:
+						current_sol[i] -= step
+					elif luck > 2/3:
+						current_sol[i] += step
+				elif up_score >= current_score and up_score > down_score:
+					current_sol[i] += step
+					step *= step_ratio
+				elif down_score >= current_score and down_score > up_score:
+					current_sol[i] -= step
+					step *= step_ratio
+				elif up_score >= down_score:
+					if random.random() < math.exp((up_score - current_score) / T):
+						current_sol[i] += step
+				else:
+					if random.random() < math.exp((down_score - current_score) / T):
+						current_sol[i] -= step
+
+			current_score = score(current_sol)
+			if current_score > best_score:
+				best_score = current_score
+				best_sol = deepcopy(current_sol)
+
+			T *= T_ratio
+			anneal_times += 1
+
+		parameter_list = best_sol
+		# print("anneal_times: ", anneal_times)
 	
-	def get_single_gradient(self, fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list):
+	def get_single_optimal_method(self, fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list):
 		# get best parameter list for activation gate
 		#for 1 qubit gate
 		#faultfree is a QuantumGate
@@ -560,9 +613,10 @@ class ATPG():
 		parameter_list = [0, 0, 0]
 
 		# print(faultfree[0])
-		for i in range(SEARCH_TIME):
-			self.single_gradient(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
-		
+		# for i in range(SEARCH_TIME):
+			# self.single_gradient(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
+		self.single_annealing_3_dir(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
+
 		# score = vector_distance(faultfree_quantum_state, faulty_quantum_state)
 
 		faulty_parameter = self.faulty_activation_gate(fault, parameter_list)
@@ -594,6 +648,7 @@ class ATPG():
 		score = vector_distance(
 				matrix_operation([U3(parameter_list), faultfree_matrix], faultfree_quantum_state, max_size=2), 
 				matrix_operation([U3(self.faulty_activation_gate(fault, parameter_list)), faulty_matrix], faulty_quantum_state, max_size=2))
+		print("score: ", score)
 
 		new_parameter_list = [0]*len(parameter_list)
 		# temp_value = 0
@@ -621,6 +676,120 @@ class ATPG():
 		for i in range(len(parameter_list)):
 			parameter_list[i] += new_parameter_list[i]
 		return 
+
+	def single_annealing_8_dir(self, parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault):
+		anneal_times = 0
+		class candidate_solution():
+			def __init__(self, parameter_list, using_temp, using_step):
+				self.parameter_list = deepcopy(parameter_list)
+				self.using_temp = using_temp
+				self.using_step = using_step
+				self.from_direction = -1
+
+		def score(parameters):
+			return vector_distance(
+				matrix_operation([U3(parameters), faultfree_matrix], faultfree_quantum_state, max_size=2), 
+				matrix_operation([U3(self.faulty_activation_gate(fault, parameters)), faulty_matrix], faulty_quantum_state, max_size=2))
+
+		candidate_solution_list = [candidate_solution(parameter_list, T_init, 2*self.step)]
+		best_score = INT_MIN
+		best_solution = None
+
+		# start annealing
+		while candidate_solution_list:
+			target = candidate_solution_list[0]
+			candidate_solution_list = candidate_solution_list[1:]
+			# stop criteria
+			if target.using_temp < T_min:
+				continue
+			current_score = score(target.parameter_list)
+			# print("current_score: ", current_score)
+			# one processed
+			anneal_times += 1
+			# compare
+			if current_score > best_score:
+				best_score = current_score
+				best_solution = target.parameter_list
+
+			# there should be 8 candidate-candidates
+			candidate_candidates = [candidate_solution(target.parameter_list, target.using_temp*T_ratio, target.using_step*step_ratio) for _ in range(8)]
+			adding_new_candidate = 0
+			for i in range(len(candidate_candidates)):
+				candidate_candidates[i].from_direction = i
+				for j in range(len(target.parameter_list)):
+					if (i >> j) % 2:
+						candidate_candidates[i].parameter_list[j] = target.parameter_list[j] + target.using_step
+					else:
+						candidate_candidates[i].parameter_list[j] = target.parameter_list[j] - target.using_step
+				# preventing going back
+				if i + target.from_direction == 8:
+					continue
+				# cal score and decide
+				this_score = score(candidate_candidates[i].parameter_list)
+				# print("this_score: ", this_score)
+				# if random.random() < math.exp((this_score - current_score) / target.using_temp):
+				if this_score >= current_score:
+					candidate_solution_list.append(candidate_candidates[i])
+					adding_new_candidate += 1
+
+			# print("adding_new_candidate: ", adding_new_candidate)
+			# print("size of list: ", len(candidate_solution_list))
+
+		parameter_list = best_solution
+		print("Annealing times: ", anneal_times)
+		return
+
+	def single_annealing_3_dir(self, parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault):
+		def score(parameters):
+			return vector_distance(
+				matrix_operation([U3(parameters), faultfree_matrix], faultfree_quantum_state, max_size=2), 
+				matrix_operation([U3(self.faulty_activation_gate(fault, parameters)), faulty_matrix], faulty_quantum_state, max_size=2))
+
+		current_sol = parameter_list
+		best_sol = None
+		best_score = INT_MIN
+		T = T_init
+		step = self.step
+		anneal_times = 0
+
+		while T > T_min:
+			current_score = score(current_sol)
+			for i in range(len(current_sol)):
+				current_sol[i] += step
+				up_score = score(current_sol)
+				current_sol[i] -= step*2
+				down_score = score(current_sol)
+				current_sol[i] += step
+
+				if up_score == current_score and down_score == current_score:
+					luck = random.random()
+					if luck < 1/3:
+						current_sol[i] -= step
+					elif luck > 2/3:
+						current_sol[i] += step
+				elif up_score >= current_score and up_score > down_score:
+					current_sol[i] += step
+					step *= step_ratio
+				elif down_score >= current_score and down_score > up_score:
+					current_sol[i] -= step
+					step *= step_ratio
+				elif up_score >= down_score:
+					if random.random() < math.exp((up_score - current_score) / T):
+						current_sol[i] += step
+				else:
+					if random.random() < math.exp((down_score - current_score) / T):
+						current_sol[i] -= step
+
+			current_score = score(current_sol)
+			if current_score > best_score:
+				best_score = current_score
+				best_sol = deepcopy(current_sol)
+
+			T *= T_ratio
+			anneal_times += 1
+
+		parameter_list = best_sol
+		# print("anneal_times: ", anneal_times)
 
 	def faulty_activation_gate(self, fault, parameter_list):
 		# first transpile

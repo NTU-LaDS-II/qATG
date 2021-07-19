@@ -524,6 +524,8 @@ Length:10     Repetition:11      Cost:110
 overkill:0.0
 testescape:[0.0, 0.0002, 0.0, 0.0002, 0.0]
 
+# U3 cost sum: 2200
+
 U2Gate variation fault at 0, ratio parameter: 0.9 1, bias parameter: 0 0  repetition: 11  len: 40 effectsize 4.799977615802419
 ideal: [0.96153956 0.03846044] [0.03847954 0.96152046]
 faulty_gate_list:
