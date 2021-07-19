@@ -15,9 +15,9 @@ filterwarnings('ignore')
 
 # print("input num of gate type")
 
-gate_set = [Qgate.U3Gate]
+# gate_set = [Qgate.U3Gate]
 # gate_set = [Qgate.U3Gate, Qgate.U2Gate, Qgate.U1Gate]
-# gate_set = [Qgate.RZGate, Qgate.SXGate]
+gate_set = [Qgate.RZGate, Qgate.SXGate]
 
 generator = ATPG(circuit_size = 5, gate_set = gate_set)
 generator.alpha = 0.99

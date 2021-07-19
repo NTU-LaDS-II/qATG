@@ -285,15 +285,15 @@ class ATPG():
 	def get_test_configuration(self, single_fault_list, two_fault_list, initial_state=np.array([1, 0])):
 		configuration_list = []
 		#single_fault_list = [ratio_fault_list , bias_fault_list , threshold_fault_list]，所以應該要
-		# for fault_type in single_fault_list:
-		# 	# for i in range(self.circuit_size):
-		# 	# TODO Potential error
-		# 	for i in range(1):
-		# 		template = self.generate_test_template(fault_type[i], np.array([1, 0]), self.get_single_optimal_method, cost_ratio=2)
-		# 		configuration = self.build_single_configuration(template, fault_type)
-		# 		self.simulate_configuration(configuration)
-		# 		configuration_list.append(configuration)
-		# print("finish build single configuration")
+		for fault_type in single_fault_list:
+			# for i in range(self.circuit_size):
+			# TODO Potential error
+			for i in range(1):
+				template = self.generate_test_template(fault_type[i], np.array([1, 0]), self.get_single_optimal_method, cost_ratio=2)
+				configuration = self.build_single_configuration(template, fault_type)
+				self.simulate_configuration(configuration)
+				configuration_list.append(configuration)
+		print("finish build single configuration")
 
 		if two_fault_list:
 			for fault_type in two_fault_list:
