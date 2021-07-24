@@ -7,13 +7,16 @@ from scipy.stats import chi2, ncx2
 
 INT_MIN = 1E-100
 INT_MAX = 1E15
-SEARCH_TIME = 1000
 sample_time = 10000
+
 threshold = 0.01
 r = 0.1
 
+MAX_ELEMENT = 50
+MIN_REQUIRED_EFFECT_SIZE = 2 # too small, will 18
+SEARCH_TIME = 10000
 T_init = 2.0
-T_min = 0.8
+T_min = 0.05
 T_ratio = (T_min/T_init)**(1/SEARCH_TIME)
 # T_ratio = 0.9
 step_ratio = 0.99

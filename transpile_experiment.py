@@ -56,15 +56,21 @@ from numpy import pi
 
 # 	# how to find best solution
 
-theta = Parameter('theta')
-phi = Parameter('phi')
-lam = Parameter('lam')
+# theta = Parameter('theta')
+# phi = Parameter('phi')
+# lam = Parameter('lam')
 
-q = QuantumCircuit(1)
-q.u(theta, phi, lam, 0)
-ckt = transpile(q, basis_gates = ['sx', 'rz'], optimization_level = 3)
+# q = QuantumCircuit(1)
+# q.u(theta, phi, lam, 0)
+# ckt = transpile(q, basis_gates = ['sx', 'rz'], optimization_level = 3)
 # new_ckt = ckt.bind_parameters({theta: pi/2, phi: pi/2, lam: pi/2})
 
 
-print(new_ckt.data)
+# print(new_ckt.data)
 
+from util import *
+
+vector1 = np.array([1, 0])
+vector2 = np.array([0, 1])
+
+print(vector_distance(vector1, vector2))

@@ -27,8 +27,6 @@ random.seed(427427)
 # threshold = 0.01
 # r = 0.1
 
-# fuck that noise model
-
 class Configuration():
 	def __init__(self, qc_faulty_list, qc_faultfree, length, fault_list):
 		self.qc_faulty_list = qc_faulty_list
@@ -295,15 +293,15 @@ class ATPG():
 				configuration_list.append(configuration)
 		print("finish build single configuration")
 
-		if two_fault_list:
-			for fault_type in two_fault_list:
-				template = self.generate_test_template(fault_type[0][0], np.array([1, 0, 0, 0]), self.get_CNOT_optimal_method, cost_ratio=2)
-				for fault_list in fault_type:
-					configuration = self.build_two_configuration(template, fault_list)
-					self.simulate_configuration(configuration)
-					configuration_list.append(configuration)
-				# break
-		print("finish build two configuration")
+		# if two_fault_list:
+		# 	for fault_type in two_fault_list:
+		# 		template = self.generate_test_template(fault_type[0][0], np.array([1, 0, 0, 0]), self.get_CNOT_optimal_method, cost_ratio=2)
+		# 		for fault_list in fault_type:
+		# 			configuration = self.build_two_configuration(template, fault_list)
+		# 			self.simulate_configuration(configuration)
+		# 			configuration_list.append(configuration)
+		# 		# break
+		# print("finish build two configuration")
 
 		test_cost = 0
 		initial_time = 0
@@ -439,7 +437,7 @@ class ATPG():
 
 		# faulty_gate_list, faultfree_gate_list, faulty_quantum_state, faultfree_quantum_state, repetition = activate_function(fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list)
 		# effectsize = cal_effect_size(to_probability(faulty_quantum_state), to_probability(faultfree_quantum_state))
-		for time in range(20):
+		for time in range(MAX_ELEMENT):
 			faulty_gate_list, faultfree_gate_list, faulty_quantum_state, faultfree_quantum_state, repetition = activate_function(fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list)
 			effectsize = cal_effect_size(to_probability(faulty_quantum_state), to_probability(faultfree_quantum_state))
 			if repetition >= INT_MAX:
@@ -449,7 +447,7 @@ class ATPG():
 				print(time, gate_list, faulty_quantum_state, faultfree_quantum_state)
 				print()
 
-			if effectsize>5:
+			if effectsize > MIN_REQUIRED_EFFECT_SIZE:
 				break
 
 		print(fault, " repetition:", repetition, " len:", (len(faultfree_gate_list)), "effectsize", effectsize)
@@ -615,8 +613,8 @@ class ATPG():
 		# print(faultfree[0])
 		# for i in range(SEARCH_TIME):
 			# self.single_gradient(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
-		self.single_annealing_3_dir(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
-
+		parameter_list = self.single_annealing_random_dir(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
+		# print("after annealing: ", parameter_list)
 		# score = vector_distance(faultfree_quantum_state, faulty_quantum_state)
 
 		faulty_parameter = self.faulty_activation_gate(fault, parameter_list)
@@ -791,6 +789,75 @@ class ATPG():
 		parameter_list = best_sol
 		# print("anneal_times: ", anneal_times)
 
+	def single_annealing_random_dir(self, parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault):
+		def score(parameters):
+			return vector_distance(
+				matrix_operation([U3(parameters), faultfree_matrix], faultfree_quantum_state, max_size=2), 
+				matrix_operation([U3(self.faulty_activation_gate(fault, parameters)), faulty_matrix], faulty_quantum_state, max_size=2))
+
+		current_sol = parameter_list
+		current_score = score(current_sol)
+		best_sol = None
+		best_score = INT_MIN
+		T = T_init
+		step = self.step
+		anneal_times = 0
+		# past_dir = -1
+		past_dir = [0, 0, 0]
+
+		while T > T_min:
+			# # 8 dir
+			# # choose direction
+			# while 1:
+			# 	new_dir = random.randint(0, 7);
+			# 	if new_dir + past_dir != 8:
+			# 		break
+			# # print("new dir: ", new_dir)
+
+			# new_sol = [0, 0, 0]
+			# for i in range(len(current_sol)):
+			# 	if (new_dir >> i) % 2:
+			# 		new_sol[i] = current_sol[i] + step
+			# 	else:
+			# 		new_sol[i] = current_sol[i] - step
+			# new_score = score(new_sol)
+			# past_dir = new_dir
+
+			choice = [-1, 0, 1] # 27 dir
+			choice = [-1, 1] # 8 dir
+			while 1:
+				new_dir = [random.choice(choice) for _ in range(3)]
+				if (not all(d == 0 for d in new_dir)) and (not all(past_dir[i]+new_dir[i] == 0 for i in range(3))):
+					# prevent not moving
+					# prevent moving backwards
+					break
+			# print("new dir: ", new_dir)
+			new_sol = [current_sol[i] + new_dir[i]*step for i in range(3)]
+			new_score = score(new_sol)
+			past_dir = deepcopy(new_dir)
+
+			if new_score > current_score:
+				current_sol = deepcopy(new_sol)
+				current_score = new_score
+				step *= step_ratio
+			elif random.random() < math.exp((new_score - current_score) / T):
+				current_sol = deepcopy(new_sol)
+				current_score = new_score
+
+			if current_score > best_score:
+				best_sol = deepcopy(current_sol)
+				best_score = current_score
+
+			T *= T_ratio
+			anneal_times += 1
+
+		# print("best_sol: ", best_sol)
+		# parameter_list = deepcopy(best_sol)
+		# parameter_list = best_sol
+		# print("anneal_times: ", anneal_times)
+
+		return best_sol
+
 	def faulty_activation_gate(self, fault, parameter_list):
 		# first transpile
 		transpile_result_ckt = self.U_to_gate_set_transpiler(parameter_list)
@@ -939,4 +1006,3 @@ class ATPG():
 		noise_model.add_all_qubit_readout_error(error_3)
 
 		return noise_model
-		
