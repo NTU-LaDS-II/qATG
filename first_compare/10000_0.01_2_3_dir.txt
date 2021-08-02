@@ -1,0 +1,170 @@
+U3Gate variation fault at 0, ratio parameter: 0.9 1 1, bias parameter: 0 0 0  repetition: 153  len: 2 effectsize 0.46035607804545675
+ideal: [0.73342927 0.26657073] [0.93698308 0.06301692]
+faulty_gate_list:
+         U3Gate [-0.45674272038412655, 1.0163604582984378e-07, 0.4974919115379386]
+         U3Gate [5.654866776461628, 0.0, 0.0]
+faultfree_gate_list:
+         U3Gate [-0.5074919115379184, 1.0163604582984378e-07, 0.4974919115379386]
+         U3Gate [6.283185307179586, 0.0, 0.0]
+Target fault:
+U3Gate variation fault at 0, ratio parameter: 0.9 1 1, bias parameter: 0 0 0
+U3Gate variation fault at 1, ratio parameter: 0.9 1 1, bias parameter: 0 0 0
+U3Gate variation fault at 2, ratio parameter: 0.9 1 1, bias parameter: 0 0 0
+U3Gate variation fault at 3, ratio parameter: 0.9 1 1, bias parameter: 0 0 0
+U3Gate variation fault at 4, ratio parameter: 0.9 1 1, bias parameter: 0 0 0
+Length:2     Repetition:169      Cost:338
+overkill:0.0
+testescape:[0.0089, 0.0094, 0.009, 0.0088, 0.009]
+
+U3Gate variation fault at 0, ratio parameter: 1 0.9 1, bias parameter: 0 0 0  repetition: 3211  len: 2 effectsize 0.1
+ideal: [0.9760052 0.0239948] [0.9760052 0.0239948]
+faulty_gate_list:
+         U3Gate [0.31105761552477523, 0.12797330877416446, 0.7513986869956287]
+         U3Gate [0.0, 5.654866776461628, 0.0]
+faultfree_gate_list:
+         U3Gate [0.31105761552477523, 0.14219256530462718, 0.7513986869956287]
+         U3Gate [0.0, 6.283185307179586, 0.0]
+Target fault:
+U3Gate variation fault at 0, ratio parameter: 1 0.9 1, bias parameter: 0 0 0
+U3Gate variation fault at 1, ratio parameter: 1 0.9 1, bias parameter: 0 0 0
+U3Gate variation fault at 2, ratio parameter: 1 0.9 1, bias parameter: 0 0 0
+U3Gate variation fault at 3, ratio parameter: 1 0.9 1, bias parameter: 0 0 0
+U3Gate variation fault at 4, ratio parameter: 1 0.9 1, bias parameter: 0 0 0
+Length:2     Repetition:3211      Cost:6422
+overkill:1.0
+testescape:[0.0112, 0.0103, 0.008, 0.0106, 0.0109]
+
+U3Gate variation fault at 0, ratio parameter: 1 1 0.9, bias parameter: 0 0 0  repetition: 3211  len: 2 effectsize 0.1
+ideal: [0.99760346 0.00239654] [0.99760346 0.00239654]
+faulty_gate_list:
+         U3Gate [-0.0979480997539786, 0.11010699408428284, 0.3306107703776761]
+         U3Gate [0.0, 0.0, 5.654866776461628]
+faultfree_gate_list:
+         U3Gate [-0.0979480997539786, 0.11010699408428284, 0.3673453004196401]
+         U3Gate [0.0, 0.0, 6.283185307179586]
+Target fault:
+U3Gate variation fault at 0, ratio parameter: 1 1 0.9, bias parameter: 0 0 0
+U3Gate variation fault at 1, ratio parameter: 1 1 0.9, bias parameter: 0 0 0
+U3Gate variation fault at 2, ratio parameter: 1 1 0.9, bias parameter: 0 0 0
+U3Gate variation fault at 3, ratio parameter: 1 1 0.9, bias parameter: 0 0 0
+U3Gate variation fault at 4, ratio parameter: 1 1 0.9, bias parameter: 0 0 0
+Length:2     Repetition:3211      Cost:6422
+overkill:1.0
+testescape:[0.0101, 0.0113, 0.0111, 0.0115, 0.0087]
+
+U3Gate variation fault at 0, ratio parameter: 1 1 1, bias parameter: 0.3141592653589793 0 0  repetition: 130  len: 2 effectsize 0.49904097181900336
+ideal: [0.7106994 0.2893006] [0.9369834 0.0630166]
+faulty_gate_list:
+         U3Gate [0.8216498617107969, 5.573622451697939e-08, 0.49749059635182696]
+         U3Gate [0.3141592653589793, 0.0, 0.0]
+faultfree_gate_list:
+         U3Gate [0.5074905963518176, 5.573622451697939e-08, 0.49749059635182696]
+         U3Gate [0.0, 0.0, 0.0]
+Target fault:
+U3Gate variation fault at 0, ratio parameter: 1 1 1, bias parameter: 0.3141592653589793 0 0
+U3Gate variation fault at 1, ratio parameter: 1 1 1, bias parameter: 0.3141592653589793 0 0
+U3Gate variation fault at 2, ratio parameter: 1 1 1, bias parameter: 0.3141592653589793 0 0
+U3Gate variation fault at 3, ratio parameter: 1 1 1, bias parameter: 0.3141592653589793 0 0
+U3Gate variation fault at 4, ratio parameter: 1 1 1, bias parameter: 0.3141592653589793 0 0
+Length:2     Repetition:141      Cost:282
+overkill:0.0
+testescape:[0.0075, 0.0104, 0.0097, 0.0089, 0.0102]
+
+U3Gate variation fault at 0, ratio parameter: 1 1 1, bias parameter: 0 0.3141592653589793 0  repetition: 3211  len: 2 effectsize 0.1
+ideal: [0.97171579 0.02828421] [0.97171579 0.02828421]
+faulty_gate_list:
+         U3Gate [0.3379643367016119, 0.5527497234379715, 0.6768995318032477]
+         U3Gate [0.0, 0.3141592653589793, 0.0]
+faultfree_gate_list:
+         U3Gate [0.3379643367016119, 0.23859045807899215, 0.6768995318032477]
+         U3Gate [0.0, 0.0, 0.0]
+Target fault:
+U3Gate variation fault at 0, ratio parameter: 1 1 1, bias parameter: 0 0.3141592653589793 0
+U3Gate variation fault at 1, ratio parameter: 1 1 1, bias parameter: 0 0.3141592653589793 0
+U3Gate variation fault at 2, ratio parameter: 1 1 1, bias parameter: 0 0.3141592653589793 0
+U3Gate variation fault at 3, ratio parameter: 1 1 1, bias parameter: 0 0.3141592653589793 0
+U3Gate variation fault at 4, ratio parameter: 1 1 1, bias parameter: 0 0.3141592653589793 0
+Length:2     Repetition:3211      Cost:6422
+overkill:1.0
+testescape:[0.0095, 0.01, 0.0113, 0.0091, 0.0096]
+
+U3Gate variation fault at 0, ratio parameter: 1 1 1, bias parameter: 0 0 0.3141592653589793  repetition: 3211  len: 2 effectsize 0.1
+ideal: [0.9820312 0.0179688] [0.9820312 0.0179688]
+faulty_gate_list:
+         U3Gate [0.2689049381577189, 0.273499502556585, 0.919137072160645]
+         U3Gate [0.0, 0.0, 0.3141592653589793]
+faultfree_gate_list:
+         U3Gate [0.2689049381577189, 0.273499502556585, 0.6049778068016657]
+         U3Gate [0.0, 0.0, 0.0]
+Target fault:
+U3Gate variation fault at 0, ratio parameter: 1 1 1, bias parameter: 0 0 0.3141592653589793
+U3Gate variation fault at 1, ratio parameter: 1 1 1, bias parameter: 0 0 0.3141592653589793
+U3Gate variation fault at 2, ratio parameter: 1 1 1, bias parameter: 0 0 0.3141592653589793
+U3Gate variation fault at 3, ratio parameter: 1 1 1, bias parameter: 0 0 0.3141592653589793
+U3Gate variation fault at 4, ratio parameter: 1 1 1, bias parameter: 0 0 0.3141592653589793
+Length:2     Repetition:3211      Cost:6422
+overkill:1.0
+testescape:[0.0098, 0.0094, 0.01, 0.0113, 0.0096]
+
+U3Gate threshold fault at 0, threshold parameter: 4.71238898038469 6.283185307179586 6.283185307179586  repetition: 14  len: 2 effectsize 1.5560688281137949
+ideal: [0.25700716 0.74299284] [0.93698339 0.06301661]
+faulty_gate_list:
+         U3Gate [-0.5074906366367176, 9.215030177262651e-08, 0.49749063663672716]
+         U3Gate [4.71238898038469, 0.0, 0.0]
+faultfree_gate_list:
+         U3Gate [-0.5074906366367176, 9.215030177262651e-08, 0.49749063663672716]
+         U3Gate [6.283185307179586, 0.0, 0.0]
+Target fault:
+U3Gate threshold fault at 0, threshold parameter: 4.71238898038469 6.283185307179586 6.283185307179586
+U3Gate threshold fault at 1, threshold parameter: 4.71238898038469 6.283185307179586 6.283185307179586
+U3Gate threshold fault at 2, threshold parameter: 4.71238898038469 6.283185307179586 6.283185307179586
+U3Gate threshold fault at 3, threshold parameter: 4.71238898038469 6.283185307179586 6.283185307179586
+U3Gate threshold fault at 4, threshold parameter: 4.71238898038469 6.283185307179586 6.283185307179586
+Length:2     Repetition:16      Cost:32
+overkill:0.0
+testescape:[0.0113, 0.0103, 0.0109, 0.0113, 0.0114]
+
+U3Gate threshold fault at 0, threshold parameter: 6.283185307179586 4.71238898038469 6.283185307179586  repetition: 3211  len: 2 effectsize 0.1
+ideal: [0.98417083 0.01582917] [0.98417083 0.01582917]
+faulty_gate_list:
+         U3Gate [0.2522966645638121, 0.20280814842603484, 0.8304374371258355]
+         U3Gate [0.0, 4.71238898038469, 0.0]
+faultfree_gate_list:
+         U3Gate [0.2522966645638121, 0.20280814842603484, 0.8304374371258355]
+         U3Gate [0.0, 6.283185307179586, 0.0]
+Target fault:
+U3Gate threshold fault at 0, threshold parameter: 6.283185307179586 4.71238898038469 6.283185307179586
+U3Gate threshold fault at 1, threshold parameter: 6.283185307179586 4.71238898038469 6.283185307179586
+U3Gate threshold fault at 2, threshold parameter: 6.283185307179586 4.71238898038469 6.283185307179586
+U3Gate threshold fault at 3, threshold parameter: 6.283185307179586 4.71238898038469 6.283185307179586
+U3Gate threshold fault at 4, threshold parameter: 6.283185307179586 4.71238898038469 6.283185307179586
+Length:2     Repetition:3211      Cost:6422
+overkill:1.0
+testescape:[0.0115, 0.0121, 0.0102, 0.01, 0.0102]
+
+U3Gate threshold fault at 0, threshold parameter: 6.283185307179586 6.283185307179586 4.71238898038469  repetition: 3211  len: 2 effectsize 0.1
+ideal: [0.97336825 0.02663175] [0.97336825 0.02663175]
+faulty_gate_list:
+         U3Gate [0.32785109081212405, 0.35565837470074985, 0.5173881365783949]
+         U3Gate [0.0, 0.0, 4.71238898038469]
+faultfree_gate_list:
+         U3Gate [0.32785109081212405, 0.35565837470074985, 0.5173881365783949]
+         U3Gate [0.0, 0.0, 6.283185307179586]
+Target fault:
+U3Gate threshold fault at 0, threshold parameter: 6.283185307179586 6.283185307179586 4.71238898038469
+U3Gate threshold fault at 1, threshold parameter: 6.283185307179586 6.283185307179586 4.71238898038469
+U3Gate threshold fault at 2, threshold parameter: 6.283185307179586 6.283185307179586 4.71238898038469
+U3Gate threshold fault at 3, threshold parameter: 6.283185307179586 6.283185307179586 4.71238898038469
+U3Gate threshold fault at 4, threshold parameter: 6.283185307179586 6.283185307179586 4.71238898038469
+Length:2     Repetition:3211      Cost:6422
+overkill:1.0
+testescape:[0.0095, 0.0092, 0.0092, 0.009, 0.0112]
+
+finish build single configuration
+Alpha: 0.99
+Beta: 0.999
+Total overkill: 1.0
+Total testescape: 0.010053333333333333
+Total test cost: 39184
+Initial time: 19592
+Number of configuration: 9

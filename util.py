@@ -14,9 +14,9 @@ r = 0.1
 
 MAX_ELEMENT = 50
 MIN_REQUIRED_EFFECT_SIZE = 2 # too small, will 18
-SEARCH_TIME = 10000
+SEARCH_TIME = 800 # 10000
 T_init = 2.0
-T_min = 0.05
+T_min = 0.01
 T_ratio = (T_min/T_init)**(1/SEARCH_TIME)
 # T_ratio = 0.9
 step_ratio = 0.99
@@ -166,6 +166,7 @@ def matrix_operation(matrix_list, quantum_state=[], max_size=4):
 
 def to_probability(probability):
 	return np.array(probability*np.conj(probability), dtype=float)
+	# would like to change
 
 def vector_distance(vector1, vector2):
 	return np.sum(np.square(np.abs(np.subtract(to_probability(vector1), to_probability(vector2)))))
