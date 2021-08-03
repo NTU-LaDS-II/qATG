@@ -453,6 +453,10 @@ class ATPG():
 			if effectsize > MIN_REQUIRED_EFFECT_SIZE:
 				break
 
+		# overall gradient descent
+		faulty_quantum_state, faultfree_quantum_state = deepcopy(quantum_state), deepcopy(quantum_state)
+		self.overall_gradient(fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list)
+
 		print(fault, " repetition:", repetition, " len:", (len(faultfree_gate_list)), "effectsize", effectsize)
 		print("ideal:", to_probability(faulty_quantum_state), to_probability(faultfree_quantum_state))
 		print("faulty_gate_list: ")
@@ -614,8 +618,8 @@ class ATPG():
 		parameter_list = [0, 0, 0]
 
 		# print(faultfree[0])
-		for i in range(SEARCH_TIME):
-			self.single_gradient(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
+		parameter_list = self.single_explore(faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
+		parameter_list = self.single_gradient(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
 		# self.single_explore(faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
 		# parameter_list = self.single_annealing_3_dir(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
 		# parameter_list = self.single_deterministic(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
@@ -648,37 +652,34 @@ class ATPG():
 	# 只對parameter list進行
 	def single_gradient(self, parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault):
 		# parameter_list = [0 , 0 , 0] 應該根據gate型態給予參數
-		score = vector_distance(
-				matrix_operation([U3(parameter_list), faultfree_matrix], faultfree_quantum_state, max_size=2), 
-				matrix_operation([U3(self.faulty_activation_gate(fault, parameter_list)), faulty_matrix], faulty_quantum_state, max_size=2))
+		def score(parameters):
+			return vector_distance(
+					matrix_operation([U3(parameters), faultfree_matrix], faultfree_quantum_state, max_size=2), 
+					matrix_operation([U3(self.faulty_activation_gate(fault, parameters)), faulty_matrix], faulty_quantum_state, max_size=2))
 		# print("score: ", score)
 
-		new_parameter_list = [0]*len(parameter_list)
-		# temp_value = 0
-		for i in range(len(parameter_list)):
-			parameter_list[i] += self.step
-			up_score = vector_distance(
-				matrix_operation([U3(parameter_list), faultfree_matrix], faultfree_quantum_state, max_size=2), 
-				matrix_operation([U3(self.faulty_activation_gate(fault, parameter_list)), faulty_matrix], faulty_quantum_state, max_size=2))
+		for i in range(SEARCH_TIME):
+			new_parameter_list = [0]*len(parameter_list)
+			for i in range(len(parameter_list)):
+				current_score = score(parameter_list)
+				parameter_list[i] += self.step
+				up_score = score(parameter_list)
+				parameter_list[i] -= 2*self.step
+				down_score = score(parameter_list)
+				parameter_list[i] += self.step
 
-			parameter_list[i] -= 2*self.step
+				if(up_score > current_score and up_score >= down_score):
+					# new_parameter_list[i] += self.step
+					new_parameter_list[i] += self.step*(up_score - current_score)
+				elif(down_score > current_score and down_score >= up_score):
+					# new_parameter_list[i] -= self.step
+					new_parameter_list[i] -= self.step*(down_score - current_score)
+			if new_parameter_list == [0, 0, 0]:
+				break
+			for i in range(len(parameter_list)):
+				parameter_list[i] += new_parameter_list[i]
 
-			down_score = vector_distance(
-				matrix_operation([U3(parameter_list), faultfree_matrix], faultfree_quantum_state, max_size=2), 
-				matrix_operation([U3(self.faulty_activation_gate(fault, parameter_list)), faulty_matrix], faulty_quantum_state, max_size=2))
-
-			parameter_list[i] += self.step
-
-
-			if score == up_score == down_score:
-				new_parameter_list[i] += self.step
-			elif(up_score > score and up_score >= down_score):
-				new_parameter_list[i] += self.step
-			elif(down_score > score and down_score >= up_score):
-				new_parameter_list[i] -= self.step
-		for i in range(len(parameter_list)):
-			parameter_list[i] += new_parameter_list[i]
-		return 
+		return parameter_list
 
 	def single_annealing_8_dir(self, parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault):
 		anneal_times = 0
@@ -965,20 +966,27 @@ class ATPG():
 				matrix_operation([U3(parameters), faultfree_matrix], faultfree_quantum_state, max_size=2), 
 				matrix_operation([U3(self.faulty_activation_gate(fault, parameters)), faulty_matrix], faulty_quantum_state, max_size=2))
 
-		with open("./4D_plot/" + str(self.SERIAL_NUMBER) + ".csv", 'w') as f:
-			# explore the parameters
-			f.write("Fault: , " + fault.description + "\n")
-			f.write("faulty_matrix, " + np.array2string(faulty_matrix).replace('\n', '').replace(',', ';') + "\n")
-			f.write("faultfree_matrix, " + np.array2string(faultfree_matrix).replace('\n', '').replace(',', ';') + "\n")
-			f.write("faulty_quantum_state, " + np.array2string(faulty_quantum_state).replace('\n', '').replace(',', ';') + "\n")
-			f.write("faultfree_quantum_state, " + np.array2string(faultfree_quantum_state).replace('\n', '').replace(',', ';') + "\n")
-			f.write("theta, phi, lam, score \n")
-			for theta in np.linspace(-np.pi, np.pi, num=21, endpoint = True):
-				for phi in np.linspace(-np.pi, np.pi, num=21, endpoint = True):
-					for lam in np.linspace(-np.pi, np.pi, num=21, endpoint = True):
-						f.write(str(theta) + ", " + str(phi) + ", " + str(lam) + ", " + str(score([theta, phi, lam])) + "\n")
+		# with open("./4D_plot/" + str(self.SERIAL_NUMBER) + ".csv", 'w') as f:
+		# 	# explore the parameters
+		# 	f.write("Fault: , " + fault.description + "\n")
+		# 	f.write("faulty_matrix, " + np.array2string(faulty_matrix).replace('\n', '').replace(',', ';') + "\n")
+		# 	f.write("faultfree_matrix, " + np.array2string(faultfree_matrix).replace('\n', '').replace(',', ';') + "\n")
+		# 	f.write("faulty_quantum_state, " + np.array2string(faulty_quantum_state).replace('\n', '').replace(',', ';') + "\n")
+		# 	f.write("faultfree_quantum_state, " + np.array2string(faultfree_quantum_state).replace('\n', '').replace(',', ';') + "\n")
+		# 	f.write("theta, phi, lam, score \n")
+		# 	for theta in np.linspace(-np.pi, np.pi, num=21, endpoint = True):
+		# 		for phi in np.linspace(-np.pi, np.pi, num=21, endpoint = True):
+		# 			for lam in np.linspace(-np.pi, np.pi, num=21, endpoint = True):
+		# 				f.write(str(theta) + ", " + str(phi) + ", " + str(lam) + ", " + str(score([theta, phi, lam])) + "\n")
 
-		self.SERIAL_NUMBER += 1
+		# self.SERIAL_NUMBER += 1
+
+		results = []
+		for theta in np.linspace(-np.pi, np.pi, num=21, endpoint = True):
+			for phi in np.linspace(-np.pi, np.pi, num=21, endpoint = True):
+				for lam in np.linspace(-np.pi, np.pi, num=21, endpoint = True):
+					results.append([[theta, phi, lam], score([theta, phi, lam])])
+		return max(results, key = lambda x: x[1])[0]
 
 	def faulty_activation_gate(self, fault, parameter_list):
 		# first transpile
@@ -1128,3 +1136,10 @@ class ATPG():
 		noise_model.add_all_qubit_readout_error(error_3)
 
 		return noise_model
+
+	def overall_gradient(self, fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list):
+		pass
+		# notice that the fault might be single/CNOT
+		# you can pass the CNOT case first
+		# do not return stuff
+		# please apply the changes directly in the gate lists
