@@ -22,7 +22,7 @@ from util import *
 random.seed(427427)
 # INT_MIN = 1E-100
 # INT_MAX = 1E15
-# SEARCH_TIME = 700
+# S = 700
 # sample_time = 10000
 # threshold = 0.01
 # r = 0.1
@@ -1138,8 +1138,14 @@ class ATPG():
 		return noise_model
 
 	def overall_gradient(self, fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list):
-		pass
+		
 		# notice that the fault might be single/CNOT
 		# you can pass the CNOT case first
 		# do not return stuff
 		# please apply the changes directly in the gate lists
+		if fault == CNOT_variation_fault:
+			pass;
+		else:
+			# first get each best element
+			get_single_optimal_method(self, fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list)
+			
