@@ -658,7 +658,7 @@ class ATPG():
 					matrix_operation([U3(self.faulty_activation_gate(fault, parameters)), faulty_matrix], faulty_quantum_state, max_size=2))
 		# print("score: ", score)
 
-		for i in range(SEARCH_TIME):
+		for j in range(SEARCH_TIME):
 			new_parameter_list = [0]*len(parameter_list)
 			for i in range(len(parameter_list)):
 				current_score = score(parameter_list)
