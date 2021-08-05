@@ -1,51 +1,46 @@
-def get_single_optimal_method(self, fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list):
-		# get best parameter list for activation gate
-		#for 1 qubit gate
-		#faultfree is a QuantumGate
-		faultfree = self.get_activation_gate(fault)
-		#faulty is a  QuantumGate
-		faulty = fault.get_faulty_gate(faultfree)
-		#faulty = self.get_activation_gate(fault)
+def overall_gradient(self, fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list):
+	
+	# notice that the fault might be single/CNOT
+	# you can pass the CNOT case first
+	# do not return stuff
+	# please apply the changes directly in the gate lists
+	def score(faulty_parameter , faultyfree_parameter):
+		return vector_distance(np.matmul(U3(fauty_parameter) , faulty_quantum_state) , np.matmul(U3(faultfree_parameter) , faultfree_quantum_state))
+			
+	faulty_matrix = np.array([[1 , 0],
+							[0 , 1]])
+	faultfree_matrix = np.array([[1 , 0],
+							[0 , 1]])
+	
+	if fault == CNOT_variation_fault:
+		pass;
+	else:
+		for gate in faulty_gate_list:
+			faulty_matrix = np.matmul(faulty_matrix , gate.to_matrix())
+		for gate in faulty_gate_list:
+			faultyfree_matrix = np.matmul(faultfree_matrix , gate.to_matrix())
 
-		
-		# print("Start:",faulty[0][0].params)
-		faultfree_matrix = faultfree.gate.to_matrix()
-		faulty_matrix = faulty.gate.to_matrix()
-		# parameter list for activation gate
-		parameter_list = [0, 0, 0]
+		faulty_theta = 2 * np.acos(faulty_matrix[0][0])
+		faulty_lam = cmath.log(-faulty_matrix[0][1] / cmath.sin(faulty_theta / 2)) / 1j
+		faulty_phi = cmath.log(faulty_matrix[1][0] / cmath.sin(faulty_theta / 2)) / 1j
 
-		# print(faultfree[0])
-		parameter_list = self.single_explore(faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
-		parameter_list = self.single_gradient(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
-		# self.single_explore(faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
-		# parameter_list = self.single_annealing_3_dir(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
-		# parameter_list = self.single_deterministic(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
-		# print("after annealing: ", parameter_list)
-		# score = vector_distance(faultfree_quantum_state, faulty_quantum_state)
+		faultfree_theta = 2 * np.acos(faultfree_matrix[0][0])
+		faultfree_lam = cmath.log(-faultfree_matrix[0][1] / cmath.sin(faultfree_theta / 2)) / 1j
+		faultfree_phi = cmath.log(faultfree_matrix[1][0] / cmath.sin(faultfree_theta / 2)) / 1j
 
-		faulty_parameter = self.faulty_activation_gate(fault, parameter_list)
-		gate1 = faulty.gate
-		gate2 = Qgate.U3Gate(*faulty_parameter)
-		# faulty_gate_list.append(Qgate.U3Gate(faulty_parameter[0], faulty_parameter[1], faulty_parameter[2]))
-		# faulty_gate_list = faulty_gate_list + self.U_to_gate_set_transpiler_to_gate_list(faulty_parameter)
-		# faulty_gate_list.append(faulty.gate)
-		
-		# faultfree_gate_list.append(Qgate.U3Gate(parameter_list[0], parameter_list[1], parameter_list[2]))
-		faultfree_gate_list = faultfree_gate_list + self.U_to_gate_set_transpiler_to_gate_list(parameter_list)
-		faultfree_gate_list.append(faultfree.gate)
-		# print(faulty_matrix)
-		faultfree_quantum_state = matrix_operation([U3(parameter_list), faultfree_matrix], faultfree_quantum_state, max_size=2)
-		faulty_quantum_state = matrix_operation([U3(self.faulty_activation_gate(fault, parameter_list)), faulty_matrix], faulty_quantum_state, max_size=2)
+		results = []
+		for theta in np.linspace(-np.pi, np.pi, num=21, endpoint = True):
+			for phi in np.linspace(-np.pi, np.pi, num=21, endpoint = True):
+				for lam in np.linspace(-np.pi, np.pi, num=21, endpoint = True):
+					faulty_parameter = [faulty_theta + theta , faulty_phi + phi , faulty_lam + lam]
+					faultfree_parameter = [faultfree_theta + theta , faultfree_phi + phi , faultfree_lam + lam]
+					results.append([faulty_parameter , faultfree_parameter , score(faulty_parameter , faultfree_parameter)])
 
-		# print(faultfree_quantum_state, faulty_quantum_state)
-		faulty_quantum_state_ = to_probability(faulty_quantum_state)
-		faultfree_quantum_state_ = to_probability(faultfree_quantum_state)
-		# faulty_quantum_state_, faultfree_quantum_state_ = compression(faulty_quantum_state_, faultfree_quantum_state_)
-		repetition, boundary = compute_repetition(faulty_quantum_state_, faultfree_quantum_state_, self.alpha, self.beta)
-		# print(parameter_list, repetition)
-		# print("repetition:", parameter_list, repetition)
-		# print(np.array(faultfree_quantum_state*np.conj(faultfree_quantum_state)), np.array(faulty_quantum_state*np.conj(faulty_quantum_state)))
-		# print(faultfree_quantum_state, faulty_quantum_state)
+		best_faulty_parameter = max(results, key = lambda x: x[2])[0]
+		best_faultfree_parameter = max(results, key = lambda x: x[2])[1]
 
-		# gate1 gate2 type = Qgate.U3Gate(parameter_list)
-		return (gate1 , gate2 , faultfree_gate_list, faulty_quantum_state, faultfree_quantum_state, repetition)
+		faulty_ckt = QuantumCircuit(1)
+		faultfree_ckt = QuantumCircuit(1)
+
+		faulty_ckt.u3(theta = best_faulty_parameter[0] , phi = best_faulty_parameter[1] , lam = best_faulty_parameter[2] , qubit = 0)
+		faultfree_ckt.u3(theta = best_faultfree_parameter[0] , phi = best_faultfree_parameter[1] , lam = best_faultfree_parameter[2] , qubit = 0)

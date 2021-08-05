@@ -1147,5 +1147,5 @@ class ATPG():
 			pass;
 		else:
 			# first get each best element
-			get_single_optimal_method(self, fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list)
+			info = self.get_single_optimal_method(self, fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list)
 			
