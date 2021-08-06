@@ -9,5 +9,30 @@
 
 # outer_func("abc")
 
-for u in range(0 , 20 , 5):
-	print(u)
+# for u in range(0 , 20 , 5):
+# 	print(u)
+
+from scipy.stats import chi2, ncx2
+import qiskit.circuit.library as Qgate
+from qiskit.circuit import Parameter
+from qiskit.circuit.quantumregister import Qubit
+# from qiskit.quantum_info import process_fidelity
+from qiskit.providers.aer.noise import NoiseModel
+from qiskit.providers.aer.noise.errors import standard_errors, ReadoutError
+from qiskit import Aer
+from qiskit import execute, transpile, QuantumRegister, ClassicalRegister, QuantumCircuit
+from qiskit.extensions import *
+# import statsmodels.stats.power as smp
+from qiskit import transpile
+from numpy import pi
+import numpy as np
+
+
+q = []
+for i in range(10):
+	q.append(Qgate.U3Gate(1 , 1 , 1))
+
+
+result = list(np.array_split(q , 5))
+
+print(result)

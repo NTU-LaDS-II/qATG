@@ -1141,6 +1141,10 @@ class ATPG():
 
 
 	# func below for overall gradient
+	# func below for overall gradient
+	def get_element_len(self):
+		return len(self.effective_u_ckt.data)
+
 	def single_gradient_for_overall_gradient(self , U_and_faulty_gate_list , U_and_faultfree_gate_list , faulty_quantum_state, faultfree_quantum_state):
 		def score():
 			temp1 = temp2 = np.array([[1 , 0],
@@ -1181,20 +1185,25 @@ class ATPG():
 		return
 
 
-	def get_U_and_gate_list(self , result_gate_list):
+	def get_U_and_gate_list(self , result_gate_list , element_len):
+
+		if element_len == 2:
+			return result_gate_list
+
 		U_and_gate_list = []
 		# using U = RZ*RX*RZ*RX*RZ
-		for i in range(0 , len(result_gate_list) , 6):
+		for i in range(0 , len(result_gate_list) , element_len):
 			temp = np.array([[1 , 0],
 							[0 , 1]])
-			for j in range(5):
+			for j in range(element_len - 1):
 				temp = np.matmul(temp , result_gate_list[i + j].to_matrix())
-				theta = 2 * cmath.acos(temp[0][0])
-				lam = cmath.log(-temp[0][1] / cmath.sin(theta / 2)) / 1j
-				phi = cmath.log(temp[1][0] / cmath.sin(theta / 2)) / 1j
+				
+			theta = 2 * cmath.acos(temp[0][0])
+			lam = cmath.log(-temp[0][1] / cmath.sin(theta / 2)) / 1j
+			phi = cmath.log(temp[1][0] / cmath.sin(theta / 2)) / 1j
 
-				U_and_gate_list.append(Qgate.U3Gate(np.real(theta) , np.real(phi) , np.real(lam)))
-			U_and_gate_list.append(result_gate_list[i + 5])
+			U_and_gate_list.append(Qgate.U3Gate(np.real(theta) , np.real(phi) , np.real(lam)))
+			U_and_gate_list.append(result_gate_list[i + element_len - 1])
 		return U_and_gate_list
 
 	def get_result_gate_list(self , faulty_gate_list , faultfree_gate_list):
@@ -1225,38 +1234,24 @@ class ATPG():
 		if fault == CNOT_variation_fault:
 			pass;
 		else:
+
+			element_len = self.get_element_len()
+
 			# qiskit gate
 			result_faulty_gate_list , result_faultfree_gate_list = self.get_result_gate_list(faulty_gate_list , faultfree_gate_list)
 
 			# qiskit gate
-			U_and_faulty_gate_list = self.get_U_and_gate_list(result_faulty_gate_list)
-			U_and_faultfree_gate_list = self.get_U_and_gate_list(result_faultfree_gate_list)
+			U_and_faulty_gate_list = self.get_U_and_gate_list(result_faulty_gate_list , element_len)
+			U_and_faultfree_gate_list = self.get_U_and_gate_list(result_faultfree_gate_list , element_len)
 
-			single_gradient_for_overall_gradient(U_and_faulty_gate_list , U_and_faultfree_gate_list)
+			self.single_gradient_for_overall_gradient(U_and_faulty_gate_list , U_and_faultfree_gate_list , faulty_quantum_state, faultfree_quantum_state)
 
 			# transpile U_and_gate_list to template
 			faulty_gate_list , faultfree_gate_list = self.transpile_U_and_gate_list_to_template(U_and_faulty_gate_list , U_and_faultfree_gate_list)
 
+			
+			
+			
 
 
-			# grid search
-			# results = []
-			# for theta in np.linspace(-np.pi, np.pi, num=21, endpoint = True):
-			# 	for phi in np.linspace(-np.pi, np.pi, num=21, endpoint = True):
-			# 		for lam in np.linspace(-np.pi, np.pi, num=21, endpoint = True):
-			# 			# using U = RZ*RX*RZ*RX*RZ
-			# 			for i in range(0 , len(result_faulty_gate_set) , 6):
-			# 				temp = np.array([[1 , 0],
-			# 								[0 , 1]])
-			# 				for j in range(5):
-			# 					temp = np.matmul(temp , result_faulty_gate_set[i + j].to_matrix())
-			# 				faulty_gate_set_transpile_to_U.append(temp)
-			# 				faulty_gate_set_transpile_to_U.append(result_faulty_gate_set[i + 5].to_matrix())
-
-			# 			for i in range(0 , len(result_faultfree_gate_set) , 6):
-			# 				temp = np.array([[1 , 0],
-			# 								[0 , 1]])
-			# 				for j in range(5):
-			# 					temp = np.matmul(temp , result_faultfree_gate_set[i + j].to_matrix())
-			# 				faultfree_gate_set_transpile_to_U.append(temp)
-			# 				faultfree_gate_set_transpile_to_U.append(result_faultfree_gate_set[i + 5].to_matrix())
+			
