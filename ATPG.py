@@ -1162,8 +1162,18 @@ class ATPG():
 			pass;
 		else:	
 			element_len = len(self.effective_u_ckt.data) + 1
-			faulty_element_list = list(np.array_split(faulty_gate_list, len(faulty_gate_list) / element_len))
-			faultfree_element_list = list(np.array_split(faultfree_gate_list, len(faultfree_gate_list) / element_len))
+			# faulty_element_list = list(np.array_split(faulty_gate_list, len(faulty_gate_list) / element_len))
+			# faultfree_element_list = list(np.array_split(faultfree_gate_list, len(faultfree_gate_list) / element_len))
+			faulty_element_list = []
+			faultfree_element_list = []
+			for i in range(0 , len(faulty_gate_list) , element_len):
+				temp1 = []
+				temp2 = []
+				for j in range(element_len):
+					temp1.append(faulty_gate_list[i + j])
+					temp2.append(faultfree_gate_list[i + j])
+				faulty_element_list.append(temp1)
+				faultfree_element_list.append(temp2)
 
 			# [ [U , faulty_gate] , []]
 			U_and_faulty_pair_gate_list = self.get_U_and_gate_pair_list(faulty_element_list , element_len)
