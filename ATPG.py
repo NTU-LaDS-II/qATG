@@ -1143,11 +1143,11 @@ class ATPG():
 	
 	# func below for overall gradient
 	def overall_gradient(self, fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list):
-		def score(which_element):
-			U_and_faulty_pair_gate_list[which_element][0].params = faulty_parameter_list
+		def score(which_element , faulty_parameter_list , faultfree_parameter_list):
+			U_and_faulty_pair_gate_list[which_element][0].params = self.faulty_activation_gate(fault , faulty_parameter_list)
 			U_and_faultfree_pair_gate_list[which_element][0].params = faultfree_parameter_list
-			faulty_matrix = faultfree_matrix = np.array([[1 , 0],
-														[0 , 1]])
+			faulty_matrix = faultfree_matrix = np.eye(2)
+
 			for pair in U_and_faulty_pair_gate_list:
 				faulty_matrix = np.matmul(faulty_matrix , pair[0].to_matrix())
 				faulty_matrix = np.matmul(faulty_matrix , pair[1].to_matrix())
@@ -1171,20 +1171,22 @@ class ATPG():
 
 			#　do on element gradient one time
 			for k in range(len(U_and_faulty_pair_gate_list)):
-				faulty_parameter_list = [U_and_faulty_pair_gate_list[k][0].params[0] , U_and_faulty_pair_gate_list[k][0].params[1] , U_and_faulty_pair_gate_list[k][0].params[2]]
-				faultfree_parameter_list = [U_and_faultfree_pair_gate_list[k][0].params[0] , U_and_faultfree_pair_gate_list[k][0].params[1] , U_and_faultfree_pair_gate_list[k][0].params[2]]
+				faulty_parameter_list = [param.__float__() for param in U_and_faulty_pair_gate_list[k][0].params]
+				faultfree_parameter_list = [param.__float__() for param in U_and_faultfree_pair_gate_list[k][0].params]
+				print("faulty_parameter_list = ", faulty_parameter_list)
+				print("faultfree_parameter_list", faultfree_parameter_list)
 				for i in range(SEARCH_TIME):
 					new_parameter_list = [0 , 0 , 0]
 					for j in range(3):
-						current_score = score(k)
+						current_score = score(k , faulty_parameter_list , faultfree_parameter_list)
 						faulty_parameter_list[j] += self.step
 						faultfree_parameter_list[j] += self.step
 
-						up_score = score(k)
+						up_score = score(k , faulty_parameter_list , faultfree_parameter_list)
 						faulty_parameter_list[j] -= 2*self.step
 						faultfree_parameter_list[j] -= 2*self.step
 
-						down_score = score(k)
+						down_score = score(k , faulty_parameter_list , faultfree_parameter_list)
 						faulty_parameter_list[j] += self.step
 						faultfree_parameter_list[j] += self.step
 
@@ -1192,6 +1194,9 @@ class ATPG():
 							new_parameter_list[j] += self.step*(up_score - current_score)
 						elif down_score > current_score and down_score >= up_score:
 							new_parameter_list[j] -= self.step*(down_score - current_score)
+					print("current_score = ",current_score)
+					print("up_score = ",up_score)
+					print("down_score = ",down_score)
 					if new_parameter_list == [0 , 0 , 0]:
 						break
 					for j in range(3):
@@ -1231,8 +1236,6 @@ class ATPG():
 			q.append(pair[1] , [0])
 		result_ckt = transpile(q , basis_gates = self.basis_gates , optimization_level = 3)
 		return [gate for gate, _, _ in result_ckt.data]
-			
-			
 			
 
 
