@@ -456,8 +456,8 @@ class ATPG():
 				break
 
 		# overall gradient descent
-		faulty_quantum_state, faultfree_quantum_state = deepcopy(quantum_state), deepcopy(quantum_state)
-		self.overall_gradient(fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list)
+		# faulty_quantum_state, faultfree_quantum_state = deepcopy(quantum_state), deepcopy(quantum_state)
+		# self.overall_gradient(fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list)
 
 		print(fault, " repetition:", repetition, " len:", (len(faultfree_gate_list)), "effectsize", effectsize)
 		print("ideal:", to_probability(faulty_quantum_state), to_probability(faultfree_quantum_state))
@@ -622,7 +622,6 @@ class ATPG():
 		# print(faultfree[0])
 		parameter_list = self.single_explore(faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
 		parameter_list = self.single_gradient(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
-		# self.single_explore(faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
 		# parameter_list = self.single_annealing_3_dir(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
 		# parameter_list = self.single_deterministic(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
 		# print("after annealing: ", parameter_list)
@@ -681,6 +680,7 @@ class ATPG():
 			for i in range(len(parameter_list)):
 				parameter_list[i] += new_parameter_list[i]
 
+		print("score: ", score(parameter_list))
 		return parameter_list
 
 	def single_annealing_8_dir(self, parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault):
@@ -1183,8 +1183,8 @@ class ATPG():
 			for k in range(len(U_and_faulty_pair_gate_list)):
 				faulty_parameter_list = [param.__float__() for param in U_and_faulty_pair_gate_list[k][0].params]
 				faultfree_parameter_list = [param.__float__() for param in U_and_faultfree_pair_gate_list[k][0].params]
-				print("faulty_parameter_list = ", faulty_parameter_list)
-				print("faultfree_parameter_list", faultfree_parameter_list)
+				# print("faulty_parameter_list = ", faulty_parameter_list)
+				# print("faultfree_parameter_list", faultfree_parameter_list)
 				for i in range(SEARCH_TIME):
 					new_parameter_list = [0 , 0 , 0]
 					for j in range(3):
@@ -1204,9 +1204,9 @@ class ATPG():
 							new_parameter_list[j] += self.step*(up_score - current_score)
 						elif down_score > current_score and down_score >= up_score:
 							new_parameter_list[j] -= self.step*(down_score - current_score)
-					print("current_score = ",current_score)
-					print("up_score = ",up_score)
-					print("down_score = ",down_score)
+					# print("current_score = ",current_score)
+					# print("up_score = ",up_score)
+					# print("down_score = ",down_score)
 					if new_parameter_list == [0 , 0 , 0]:
 						break
 					for j in range(3):
@@ -1224,7 +1224,7 @@ class ATPG():
 			return element_list
 
 		result = []
-		print(element_list)
+		# print(element_list)
 		for element in element_list:
 			q = QuantumCircuit(1)
 
@@ -1232,8 +1232,8 @@ class ATPG():
 				q.append(element[i] , [0])
 
 			ckt_to_u = transpile(q , basis_gates = ['u3'] , optimization_level = 3)
-			print("*************************")
-			print(ckt_to_u)
+			# print("*************************")
+			# print(ckt_to_u)
 			result.append([ckt_to_u.data[0][0] , element[element_len - 1]])
 
 		return result

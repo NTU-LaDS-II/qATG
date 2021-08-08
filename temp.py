@@ -113,93 +113,99 @@
 
 
 	# func below for overall gradient
-	def overall_gradient(self, fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list):
-		def score(which_element , faulty_parameter_list , faultfree_parameter_list):
-			U_and_faulty_pair_gate_list[which_element][0].params = self.faulty_activation_gate(fault , faulty_parameter_list)
-			U_and_faultfree_pair_gate_list[which_element][0].params = faultfree_parameter_list
-			faulty_matrix = faultfree_matrix = np.eye(2)
+	# def overall_gradient(self, fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list):
+	# 	def score(which_element , faulty_parameter_list , faultfree_parameter_list):
+	# 		U_and_faulty_pair_gate_list[which_element][0].params = self.faulty_activation_gate(fault , faulty_parameter_list)
+	# 		U_and_faultfree_pair_gate_list[which_element][0].params = faultfree_parameter_list
+	# 		faulty_matrix = faultfree_matrix = np.eye(2)
 
-			for pair in U_and_faulty_pair_gate_list:
-				faulty_matrix = np.matmul(faulty_matrix , pair[0].to_matrix())
-				faulty_matrix = np.matmul(faulty_matrix , pair[1].to_matrix())
-			for pair in U_and_faultfree_pair_gate_list:
-				faultfree_matrix = np.matmul(faultfree_matrix , pair[0].to_matrix())
-				faultfree_matrix = np.matmul(faultfree_matrix , pair[1].to_matrix())
+	# 		for pair in U_and_faulty_pair_gate_list:
+	# 			faulty_matrix = np.matmul(faulty_matrix , pair[0].to_matrix())
+	# 			faulty_matrix = np.matmul(faulty_matrix , pair[1].to_matrix())
+	# 		for pair in U_and_faultfree_pair_gate_list:
+	# 			faultfree_matrix = np.matmul(faultfree_matrix , pair[0].to_matrix())
+	# 			faultfree_matrix = np.matmul(faultfree_matrix , pair[1].to_matrix())
 
-			return vector_distance(np.matmul(faulty_matrix , faulty_quantum_state) , np.matmul(faultfree_matrix , faultfree_quantum_state))
-
-
-		if fault == CNOT_variation_fault:
-			pass;
-		else:	
-			element_len = len(self.effective_u_ckt.data) + 1
-			faulty_element_list = list(np.array_split(faulty_gate_list, len(faulty_gate_list) / element_len))
-			faultfree_element_list = list(np.array_split(faultfree_gate_list, len(faultfree_gate_list) / element_len))
-
-			# [ [U , faulty_gate] , []]
-			U_and_faulty_pair_gate_list = self.get_U_and_gate_pair_list(faulty_element_list , element_len)
-			U_and_faultfree_pair_gate_list = self.get_U_and_gate_pair_list(faultfree_element_list , element_len)
-
-			#　do on element gradient one time
-			for k in range(len(U_and_faulty_pair_gate_list)):
-				faulty_parameter_list = U_and_faulty_pair_gate_list[k][0].params
-				faultfree_parameter_list = U_and_faultfree_pair_gate_list[k][0].params
-				for i in range(SEARCH_TIME):
-					new_parameter_list = [0 , 0 , 0]
-					for j in range(3):
-						current_score = score(k , faulty_parameter_list , faultfree_parameter_list)
-						faulty_parameter_list[j] += self.step
-						faultfree_parameter_list[j] += self.step
-
-						up_score = score(k , faulty_parameter_list , faultfree_parameter_list)
-						faulty_parameter_list[j] -= 2*self.step
-						faultfree_parameter_list[j] -= 2*self.step
-
-						down_score = score(k , faulty_parameter_list , faultfree_parameter_list)
-						faulty_parameter_list[j] += self.step
-						faultfree_parameter_list[j] += self.step
-
-						if up_score > current_score and up_score >= down_score:
-							new_parameter_list[j] += self.step*(up_score - current_score)
-						elif down_score > current_score and down_score >= up_score:
-							new_parameter_list[j] -= self.step*(down_score - current_score)
-					if new_parameter_list == [0 , 0 , 0]:
-						break
-					for j in range(3):
-						faulty_parameter_list[j] += new_parameter_list[j] 
-						faultfree_parameter_list[j] += new_parameter_list[j]
-				U_and_faulty_pair_gate_list[k][0].params = faulty_parameter_list
-				U_and_faultfree_pair_gate_list[k][0].params = faultfree_parameter_list
+	# 		return vector_distance(np.matmul(faulty_matrix , faulty_quantum_state) , np.matmul(faultfree_matrix , faultfree_quantum_state))
 
 
-			faulty_gate_list = self.transpile_U_and_gate_pair_list_to_gate_list(U_and_faulty_pair_gate_list)
-			faultfree_gate_list = self.transpile_U_and_gate_pair_list_to_gate_list(U_and_faultfree_pair_gate_list)
+	# 	if fault == CNOT_variation_fault:
+	# 		pass;
+	# 	else:	
+	# 		element_len = len(self.effective_u_ckt.data) + 1
+	# 		faulty_element_list = list(np.array_split(faulty_gate_list, len(faulty_gate_list) / element_len))
+	# 		faultfree_element_list = list(np.array_split(faultfree_gate_list, len(faultfree_gate_list) / element_len))
 
-	def get_U_and_gate_pair_list(self , element_list , element_len):
-		if element_len == 2:
-			return element_list
+	# 		# [ [U , faulty_gate] , []]
+	# 		U_and_faulty_pair_gate_list = self.get_U_and_gate_pair_list(faulty_element_list , element_len)
+	# 		U_and_faultfree_pair_gate_list = self.get_U_and_gate_pair_list(faultfree_element_list , element_len)
 
-		result = []
-		print(element_list)
-		for element in element_list:
-			q = QuantumCircuit(1)
+	# 		#　do on element gradient one time
+	# 		for k in range(len(U_and_faulty_pair_gate_list)):
+	# 			faulty_parameter_list = U_and_faulty_pair_gate_list[k][0].params
+	# 			faultfree_parameter_list = U_and_faultfree_pair_gate_list[k][0].params
+	# 			for i in range(SEARCH_TIME):
+	# 				new_parameter_list = [0 , 0 , 0]
+	# 				for j in range(3):
+	# 					current_score = score(k , faulty_parameter_list , faultfree_parameter_list)
+	# 					faulty_parameter_list[j] += self.step
+	# 					faultfree_parameter_list[j] += self.step
 
-			for i in range(element_len - 1):
-				q.append(element[i] , [0])
+	# 					up_score = score(k , faulty_parameter_list , faultfree_parameter_list)
+	# 					faulty_parameter_list[j] -= 2*self.step
+	# 					faultfree_parameter_list[j] -= 2*self.step
 
-			ckt_to_u = transpile(q , basis_gates = ['u3'] , optimization_level = 3)
-			print("*************************")
-			print(ckt_to_u)
-			result.append([ckt_to_u.data[0][0] , element[element_len - 1]])
+	# 					down_score = score(k , faulty_parameter_list , faultfree_parameter_list)
+	# 					faulty_parameter_list[j] += self.step
+	# 					faultfree_parameter_list[j] += self.step
 
-		return result
+	# 					if up_score > current_score and up_score >= down_score:
+	# 						new_parameter_list[j] += self.step*(up_score - current_score)
+	# 					elif down_score > current_score and down_score >= up_score:
+	# 						new_parameter_list[j] -= self.step*(down_score - current_score)
+	# 				if new_parameter_list == [0 , 0 , 0]:
+	# 					break
+	# 				for j in range(3):
+	# 					faulty_parameter_list[j] += new_parameter_list[j] 
+	# 					faultfree_parameter_list[j] += new_parameter_list[j]
+	# 			U_and_faulty_pair_gate_list[k][0].params = faulty_parameter_list
+	# 			U_and_faultfree_pair_gate_list[k][0].params = faultfree_parameter_list
+
+
+	# 		faulty_gate_list = self.transpile_U_and_gate_pair_list_to_gate_list(U_and_faulty_pair_gate_list)
+	# 		faultfree_gate_list = self.transpile_U_and_gate_pair_list_to_gate_list(U_and_faultfree_pair_gate_list)
+
+	# def get_U_and_gate_pair_list(self , element_list , element_len):
+	# 	if element_len == 2:
+	# 		return element_list
+
+	# 	result = []
+	# 	print(element_list)
+	# 	for element in element_list:
+	# 		q = QuantumCircuit(1)
+
+	# 		for i in range(element_len - 1):
+	# 			q.append(element[i] , [0])
+
+	# 		ckt_to_u = transpile(q , basis_gates = ['u3'] , optimization_level = 3)
+	# 		print("*************************")
+	# 		print(ckt_to_u)
+	# 		result.append([ckt_to_u.data[0][0] , element[element_len - 1]])
+
+	# 	return result
 			
 
-	def transpile_U_and_gate_pair_list_to_gate_list(self , U_and_gate_pair_list):
-		q = QuantumCircuit(1)
-		for pair in U_and_gate_pair_list:
-			q.append(pair[0] , [0])
-			q.append(pair[1] , [0])
-		result_ckt = transpile(q , basis_gates = self.basis_gates , optimization_level = 3)
-		return [gate for gate, _, _ in result_ckt.data]
+	# def transpile_U_and_gate_pair_list_to_gate_list(self , U_and_gate_pair_list):
+	# 	q = QuantumCircuit(1)
+	# 	for pair in U_and_gate_pair_list:
+	# 		q.append(pair[0] , [0])
+	# 		q.append(pair[1] , [0])
+	# 	result_ckt = transpile(q , basis_gates = self.basis_gates , optimization_level = 3)
+	# 	return [gate for gate, _, _ in result_ckt.data]
 			
+
+import qiskit.circuit.library as Qgate
+import numpy as np
+
+a = [Qgate.U3Gate(0, 0, 0)]
+b = list(np.array_split(a, 2))
