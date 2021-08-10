@@ -203,9 +203,4 @@
 	# 	result_ckt = transpile(q , basis_gates = self.basis_gates , optimization_level = 3)
 	# 	return [gate for gate, _, _ in result_ckt.data]
 			
-
-import qiskit.circuit.library as Qgate
-import numpy as np
-
-a = [Qgate.U3Gate(0, 0, 0)]
-b = list(np.array_split(a, 2))
+print("hello")

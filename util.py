@@ -13,7 +13,7 @@ threshold = 0.01
 r = 0.1
 
 MAX_ELEMENT = 50
-MIN_REQUIRED_EFFECT_SIZE = 2 # too small, will 18
+MIN_REQUIRED_EFFECT_SIZE = 1.5 # too small, will 18
 SEARCH_TIME = 100 # 10000
 T_init = 2.0
 T_min = 0.01

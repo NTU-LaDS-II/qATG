@@ -456,8 +456,8 @@ class ATPG():
 				break
 
 		# overall gradient descent
-		# faulty_quantum_state, faultfree_quantum_state = deepcopy(quantum_state), deepcopy(quantum_state)
-		# self.overall_gradient(fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list)
+		faulty_quantum_state, faultfree_quantum_state = deepcopy(quantum_state), deepcopy(quantum_state)
+		self.overall_gradient(fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list)
 
 		print(fault, " repetition:", repetition, " len:", (len(faultfree_gate_list)), "effectsize", effectsize)
 		print("ideal:", to_probability(faulty_quantum_state), to_probability(faultfree_quantum_state))
@@ -1161,6 +1161,10 @@ class ATPG():
 		if fault == CNOT_variation_fault:
 			pass;
 		else:	
+			# print("faulty gate list before gradient")
+			# for gate in faulty_gate_list:
+			# 	print(gate.params)
+
 			element_len = len(self.effective_u_ckt.data) + 1
 			# faulty_element_list = list(np.array_split(faulty_gate_list, len(faulty_gate_list) / element_len))
 			# faultfree_element_list = list(np.array_split(faultfree_gate_list, len(faultfree_gate_list) / element_len))
@@ -1201,8 +1205,10 @@ class ATPG():
 						faultfree_parameter_list[j] += self.step
 
 						if up_score > current_score and up_score >= down_score:
+							# print("up better")
 							new_parameter_list[j] += self.step*(up_score - current_score)
 						elif down_score > current_score and down_score >= up_score:
+							# print("down better")
 							new_parameter_list[j] -= self.step*(down_score - current_score)
 					# print("current_score = ",current_score)
 					# print("up_score = ",up_score)
@@ -1218,7 +1224,9 @@ class ATPG():
 
 			faulty_gate_list = self.transpile_U_and_gate_pair_list_to_gate_list(U_and_faulty_pair_gate_list)
 			faultfree_gate_list = self.transpile_U_and_gate_pair_list_to_gate_list(U_and_faultfree_pair_gate_list)
-
+			# print("faulty gate list after gradient")
+			# for gate in faulty_gate_list:
+			# 	print(gate.params)
 	def get_U_and_gate_pair_list(self , element_list , element_len):
 		if element_len == 2:
 			return element_list
