@@ -286,27 +286,27 @@ class ATPG():
 
 	def get_test_configuration(self, single_fault_list, two_fault_list, initial_state=np.array([1, 0])):
 		configuration_list = []
-		#single_fault_list = [ratio_fault_list , bias_fault_list , threshold_fault_list]，所以應該要
-		for fault_type in single_fault_list:
-			# for i in range(self.circuit_size):
-			# TODO Potential error
-			for i in range(1):
-				template = self.generate_test_template(fault_type[i], np.array([1, 0]), self.get_single_optimal_method, cost_ratio=2)
-				configuration = self.build_single_configuration(template, fault_type)
-				self.simulate_configuration(configuration)
-				configuration_list.append(configuration)
-		print("finish build single configuration")
+		# CAUTION: UNCOMMENT
+		# for fault_type in single_fault_list:
+		# 	# for i in range(self.circuit_size):
+		# 	# TODO Potential error
+		# 	for i in range(1):
+		# 		template = self.generate_test_template(fault_type[i], np.array([1, 0]), self.get_single_optimal_method, cost_ratio=2)
+		# 		configuration = self.build_single_configuration(template, fault_type)
+		# 		self.simulate_configuration(configuration)
+		# 		configuration_list.append(configuration)
+		# print("finish build single configuration")
 
 		# CAUTION: UNCOMMENT
-		# if two_fault_list:
-		# 	for fault_type in two_fault_list:
-		# 		template = self.generate_test_template(fault_type[0][0], np.array([1, 0, 0, 0]), self.get_CNOT_optimal_method, cost_ratio=2)
-		# 		for fault_list in fault_type:
-		# 			configuration = self.build_two_configuration(template, fault_list)
-		# 			self.simulate_configuration(configuration)
-		# 			configuration_list.append(configuration)
-		# 		# break
-		# print("finish build two configuration")
+		if two_fault_list:
+			for fault_type in two_fault_list:
+				template = self.generate_test_template(fault_type[0][0], np.array([1, 0, 0, 0]), self.get_CNOT_optimal_method, cost_ratio=2)
+				for fault_list in fault_type:
+					configuration = self.build_two_configuration(template, fault_list)
+					self.simulate_configuration(configuration)
+					configuration_list.append(configuration)
+				# break
+		print("finish build two configuration")
 
 		test_cost = 0
 		initial_time = 0
@@ -501,7 +501,9 @@ class ATPG():
 		parameter_list = [0, 0, 0, 0, 0, 0]
 		# for i in range(SEARCH_TIME):
 			# self.two_gradient(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state)
-		self.two_annealing(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state)
+		# self.two_annealing(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state)
+		parameter_list = self.two_explore(faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state)
+		parameter_list = self.two_gradient(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state)
 		# faultfree_gate_list.append([Qgate.U3Gate(parameter_list[0], parameter_list[1], parameter_list[2]), Qgate.U3Gate(parameter_list[3], parameter_list[4], parameter_list[5])])
 		faultfree_gate_list.append(self.U_to_gate_set_transpiler_to_gate_list(parameter_list[0:3]) + self.U_to_gate_set_transpiler_to_gate_list(parameter_list[3:]))
 		faultfree_gate_list.append(Qgate.CXGate())
@@ -522,34 +524,35 @@ class ATPG():
 		return (faulty_gate_list, faultfree_gate_list, faulty_quantum_state, faultfree_quantum_state, repetition)
 
 	def two_gradient(self, parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state):
-		score = vector_distance(
-				matrix_operation([[U3(parameter_list[0:3]), U3(parameter_list[3:6])], faultfree_matrix], faultfree_quantum_state), 
-				matrix_operation([[U3(parameter_list[0:3]), U3(parameter_list[3:6])], faulty_matrix], faulty_quantum_state))
-		new_parameter_list = [0]*len(parameter_list)
+		# parameter_list = [0, 0, 0, 0, 0, 0]
+		def score(parameters):
+			return vector_distance(
+				matrix_operation([[U3(parameters[0:3]), U3(parameters[3:6])], faultfree_matrix], faultfree_quantum_state), 
+				matrix_operation([[U3(parameters[0:3]), U3(parameters[3:6])], faulty_matrix], faulty_quantum_state))
 
-		for i in range(len(parameter_list)):
-			parameter_list[i] += self.step
-			up_score = vector_distance(
-				matrix_operation([[U3(parameter_list[0:3]), U3(parameter_list[3:6])], faultfree_matrix], faultfree_quantum_state), 
-				matrix_operation([[U3(parameter_list[0:3]), U3(parameter_list[3:6])], faulty_matrix], faulty_quantum_state))
-			parameter_list[i] -= 2*self.step
+		for j in range(SEARCH_TIME):
+			new_parameter_list = [0]*len(parameter_list)
+			for i in range(len(parameter_list)):
+				current_score = score(parameter_list)
+				parameter_list[i] += self.step
+				up_score = score(parameter_list)
+				parameter_list[i] -= 2*self.step
+				down_score = score(parameter_list)
+				parameter_list[i] += self.step
 
-			down_score = vector_distance(
-				matrix_operation([[U3(parameter_list[0:3]), U3(parameter_list[3:6])], faultfree_matrix], faultfree_quantum_state), 
-				matrix_operation([[U3(parameter_list[0:3]), U3(parameter_list[3:6])], faulty_matrix], faulty_quantum_state))
-			parameter_list[i] += self.step
+				if(up_score > current_score and up_score >= down_score):
+					# new_parameter_list[i] += self.step
+					new_parameter_list[i] += self.step*(up_score - current_score)
+				elif(down_score > current_score and down_score >= up_score):
+					# new_parameter_list[i] -= self.step
+					new_parameter_list[i] -= self.step*(down_score - current_score)
+			if new_parameter_list == [0, 0, 0, 0, 0, 0]:
+				break
+			for i in range(len(parameter_list)):
+				parameter_list[i] += new_parameter_list[i]
 
-			if score == up_score == down_score:
-				new_parameter_list[i] += self.step
-			elif(up_score > score and up_score >= down_score):
-				new_parameter_list[i] += self.step
-			elif(down_score > score and down_score >= up_score):
-				new_parameter_list[i] -= self.step
-		
-		for i in range(len(parameter_list)):
-			parameter_list[i] += new_parameter_list[i]
-
-		return 
+		print("score: ", score(parameter_list))
+		return parameter_list
 
 	def two_annealing(self, parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state):
 		def score(parameters):
@@ -602,7 +605,30 @@ class ATPG():
 
 		parameter_list = best_sol
 		# print("anneal_times: ", anneal_times)
+
+	def two_explore(self, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state):
+		def score(parameters):
+			return vector_distance(
+				matrix_operation([[U3(parameters[0:3]), U3(parameters[3:6])], faultfree_matrix], faultfree_quantum_state), 
+				matrix_operation([[U3(parameters[0:3]), U3(parameters[3:6])], faulty_matrix], faulty_quantum_state))
+
+		# 3+3 method
+		results = []
+		for theta in np.linspace(-np.pi, np.pi, num=21, endpoint = True):
+			for phi in np.linspace(-np.pi, np.pi, num=21, endpoint = True):
+				for lam in np.linspace(-np.pi, np.pi, num=21, endpoint = True):
+					results.append([[theta, phi, lam], score([theta, phi, lam, 0, 0, 0])])
+		first_three = max(results, key = lambda x: x[1])[0]
+
+		results = []
+		for theta in np.linspace(-np.pi, np.pi, num=21, endpoint = True):
+			for phi in np.linspace(-np.pi, np.pi, num=21, endpoint = True):
+				for lam in np.linspace(-np.pi, np.pi, num=21, endpoint = True):
+					results.append([[theta, phi, lam], score(first_three + [theta, phi, lam])])
+		next_three = max(results, key = lambda x: x[1])[0]
 	
+		return first_three + next_three
+
 	def get_single_optimal_method(self, fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list):
 		# get best parameter list for activation gate
 		#for 1 qubit gate
@@ -1159,7 +1185,7 @@ class ATPG():
 			return vector_distance(np.matmul(faulty_matrix , faulty_quantum_state) , np.matmul(faultfree_matrix , faultfree_quantum_state))
 
 
-		if fault == CNOT_variation_fault:
+		if type(fault) == CNOT_variation_fault:
 			pass;
 		else:	
 			# print("faulty gate list before gradient")

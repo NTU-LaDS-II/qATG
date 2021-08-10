@@ -54,6 +54,11 @@ z = np.reshape(Z, (21, 21))
 fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
 surf = ax.plot_surface(x, y, z, cmap=cm.coolwarm, linewidth=0, antialiased=False)
 
-fig.colorbar(surf, shrink=0.5, aspect=5)
+bar = fig.colorbar(surf, shrink=0.5, aspect=10)
+bar.ax.set_ylabel("score")
+
+ax.set_xlabel("$\\theta$ (radius)")
+ax.set_ylabel("$\phi$ (radius)")
+ax.set_title("Scores of Different Activation Gates")
 
 plt.show()
