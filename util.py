@@ -14,7 +14,7 @@ r = 0.1
 
 MAX_ELEMENT = 50
 MIN_REQUIRED_EFFECT_SIZE = 3 # too small, will 18
-SEARCH_TIME = 200 # 10000
+SEARCH_TIME = 10000 # 800
 T_init = 2.0
 T_min = 0.01
 T_ratio = (T_min/T_init)**(1/SEARCH_TIME)

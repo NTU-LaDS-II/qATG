@@ -287,26 +287,26 @@ class ATPG():
 	def get_test_configuration(self, single_fault_list, two_fault_list, initial_state=np.array([1, 0])):
 		configuration_list = []
 		# CAUTION: UNCOMMENT
-		# for fault_type in single_fault_list:
-		# 	# for i in range(self.circuit_size):
-		# 	# TODO Potential error
-		# 	for i in range(1):
-		# 		template = self.generate_test_template(fault_type[i], np.array([1, 0]), self.get_single_optimal_method, cost_ratio=2)
-		# 		configuration = self.build_single_configuration(template, fault_type)
-		# 		self.simulate_configuration(configuration)
-		# 		configuration_list.append(configuration)
-		# print("finish build single configuration")
+		for fault_type in single_fault_list:
+			# for i in range(self.circuit_size):
+			# TODO Potential error
+			for i in range(1):
+				template = self.generate_test_template(fault_type[i], np.array([1, 0]), self.get_single_optimal_method, cost_ratio=2)
+				configuration = self.build_single_configuration(template, fault_type)
+				self.simulate_configuration(configuration)
+				configuration_list.append(configuration)
+		print("finish build single configuration")
 
 		# CAUTION: UNCOMMENT
-		if two_fault_list:
-			for fault_type in two_fault_list:
-				template = self.generate_test_template(fault_type[0][0], np.array([1, 0, 0, 0]), self.get_CNOT_optimal_method, cost_ratio=2)
-				for fault_list in fault_type:
-					configuration = self.build_two_configuration(template, fault_list)
-					self.simulate_configuration(configuration)
-					configuration_list.append(configuration)
-				# break
-		print("finish build two configuration")
+		# if two_fault_list:
+		# 	for fault_type in two_fault_list:
+		# 		template = self.generate_test_template(fault_type[0][0], np.array([1, 0, 0, 0]), self.get_CNOT_optimal_method, cost_ratio=2)
+		# 		for fault_list in fault_type:
+		# 			configuration = self.build_two_configuration(template, fault_list)
+		# 			self.simulate_configuration(configuration)
+		# 			configuration_list.append(configuration)
+		# 		# break
+		# print("finish build two configuration")
 
 		test_cost = 0
 		initial_time = 0
