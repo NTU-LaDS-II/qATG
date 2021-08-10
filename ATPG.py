@@ -456,7 +456,11 @@ class ATPG():
 				break
 
 		# overall gradient descent
+
 		# faulty_quantum_state, faultfree_quantum_state = deepcopy(quantum_state), deepcopy(quantum_state)
+
+		faulty_quantum_state, faultfree_quantum_state = deepcopy(quantum_state), deepcopy(quantum_state)
+
 		# self.overall_gradient(fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list)
 
 		print(fault, " repetition:", repetition, " len:", (len(faultfree_gate_list)), "effectsize", effectsize)
@@ -1143,6 +1147,7 @@ class ATPG():
 	
 	# func below for overall gradient
 	def overall_gradient(self, fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list):
+
 		def score(which_element , faulty_parameter_list , faultfree_parameter_list):
 			U_and_faulty_pair_gate_list[which_element][0].params = self.faulty_activation_gate(fault , faulty_parameter_list)
 			U_and_faultfree_pair_gate_list[which_element][0].params = faultfree_parameter_list
@@ -1201,8 +1206,10 @@ class ATPG():
 						faultfree_parameter_list[j] += self.step
 
 						if up_score > current_score and up_score >= down_score:
+							# print("up is better")
 							new_parameter_list[j] += self.step*(up_score - current_score)
 						elif down_score > current_score and down_score >= up_score:
+							# print("down is better")
 							new_parameter_list[j] -= self.step*(down_score - current_score)
 					# print("current_score = ",current_score)
 					# print("up_score = ",up_score)

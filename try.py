@@ -45,7 +45,8 @@
 # 	print(j)
 
 
-for i in range(3):
-	a = 1
-a += 1
-print(a)
+def func():
+	pass
+	print("hello")
+
+func()
