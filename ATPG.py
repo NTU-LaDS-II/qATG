@@ -456,8 +456,8 @@ class ATPG():
 				break
 
 		# overall gradient descent
-		faulty_quantum_state, faultfree_quantum_state = deepcopy(quantum_state), deepcopy(quantum_state)
-		self.overall_gradient(fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list)
+		# faulty_quantum_state, faultfree_quantum_state = deepcopy(quantum_state), deepcopy(quantum_state)
+		# self.overall_gradient(fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list)
 
 		print(fault, " repetition:", repetition, " len:", (len(faultfree_gate_list)), "effectsize", effectsize)
 		print("ideal:", to_probability(faulty_quantum_state), to_probability(faultfree_quantum_state))
@@ -541,11 +541,13 @@ class ATPG():
 				parameter_list[i] += self.step
 
 				if(up_score > current_score and up_score >= down_score):
-					# new_parameter_list[i] += self.step
-					new_parameter_list[i] += self.step*(up_score - current_score)
+					new_parameter_list[i] += self.step
+					# new_parameter_list[i] += self.step*(up_score - current_score)
 				elif(down_score > current_score and down_score >= up_score):
-					# new_parameter_list[i] -= self.step
-					new_parameter_list[i] -= self.step*(down_score - current_score)
+					new_parameter_list[i] -= self.step
+					# new_parameter_list[i] -= self.step*(down_score - current_score)
+				elif up_score == current_score == down_score:
+					new_parameter_list[i] += self.step
 			if new_parameter_list == [0, 0, 0, 0, 0, 0]:
 				break
 			for i in range(len(parameter_list)):
@@ -614,16 +616,16 @@ class ATPG():
 
 		# 3+3 method
 		results = []
-		for theta in np.linspace(-np.pi, np.pi, num=21, endpoint = True):
-			for phi in np.linspace(-np.pi, np.pi, num=21, endpoint = True):
-				for lam in np.linspace(-np.pi, np.pi, num=21, endpoint = True):
+		for theta in np.linspace(-np.pi, np.pi, num=GRID_SLICE, endpoint = True):
+			for phi in np.linspace(-np.pi, np.pi, num=GRID_SLICE, endpoint = True):
+				for lam in np.linspace(-np.pi, np.pi, num=GRID_SLICE, endpoint = True):
 					results.append([[theta, phi, lam], score([theta, phi, lam, 0, 0, 0])])
 		first_three = max(results, key = lambda x: x[1])[0]
 
 		results = []
-		for theta in np.linspace(-np.pi, np.pi, num=21, endpoint = True):
-			for phi in np.linspace(-np.pi, np.pi, num=21, endpoint = True):
-				for lam in np.linspace(-np.pi, np.pi, num=21, endpoint = True):
+		for theta in np.linspace(-np.pi, np.pi, num=GRID_SLICE, endpoint = True):
+			for phi in np.linspace(-np.pi, np.pi, num=GRID_SLICE, endpoint = True):
+				for lam in np.linspace(-np.pi, np.pi, num=GRID_SLICE, endpoint = True):
 					results.append([[theta, phi, lam], score(first_three + [theta, phi, lam])])
 		next_three = max(results, key = lambda x: x[1])[0]
 	
@@ -646,9 +648,9 @@ class ATPG():
 		parameter_list = [0, 0, 0]
 
 		# print(faultfree[0])
-		parameter_list = self.single_explore(faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
-		parameter_list = self.single_gradient(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
-		# parameter_list = self.single_annealing_3_dir(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
+		# parameter_list = self.single_explore(faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
+		# parameter_list = self.single_gradient(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
+		parameter_list = self.single_annealing_3_dir(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
 		# parameter_list = self.single_deterministic(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
 		# print("after annealing: ", parameter_list)
 		# score = vector_distance(faultfree_quantum_state, faulty_quantum_state)
@@ -696,11 +698,18 @@ class ATPG():
 				parameter_list[i] += self.step
 
 				if(up_score > current_score and up_score >= down_score):
-					# new_parameter_list[i] += self.step
-					new_parameter_list[i] += self.step*(up_score - current_score)
+					# for gradient descent only
+					new_parameter_list[i] += self.step
+					# for grid search
+					# new_parameter_list[i] += self.step*(up_score - current_score)
 				elif(down_score > current_score and down_score >= up_score):
-					# new_parameter_list[i] -= self.step
-					new_parameter_list[i] -= self.step*(down_score - current_score)
+					# for gradient descent only
+					new_parameter_list[i] -= self.step
+					# for grid search
+					# new_parameter_list[i] -= self.step*(down_score - current_score)
+				# for gradient descent only
+				elif up_score == current_score == down_score:
+					new_parameter_list[i] += self.step
 			if new_parameter_list == [0, 0, 0]:
 				break
 			for i in range(len(parameter_list)):
@@ -1002,17 +1011,17 @@ class ATPG():
 		# 	f.write("faulty_quantum_state, " + np.array2string(faulty_quantum_state).replace('\n', '').replace(',', ';') + "\n")
 		# 	f.write("faultfree_quantum_state, " + np.array2string(faultfree_quantum_state).replace('\n', '').replace(',', ';') + "\n")
 		# 	f.write("theta, phi, lam, score \n")
-		# 	for theta in np.linspace(-np.pi, np.pi, num=21, endpoint = True):
-		# 		for phi in np.linspace(-np.pi, np.pi, num=21, endpoint = True):
-		# 			for lam in np.linspace(-np.pi, np.pi, num=21, endpoint = True):
+		# 	for theta in np.linspace(-np.pi, np.pi, num=GRID_SLICE, endpoint = True):
+		# 		for phi in np.linspace(-np.pi, np.pi, num=GRID_SLICE, endpoint = True):
+		# 			for lam in np.linspace(-np.pi, np.pi, num=GRID_SLICE, endpoint = True):
 		# 				f.write(str(theta) + ", " + str(phi) + ", " + str(lam) + ", " + str(score([theta, phi, lam])) + "\n")
 
 		# self.SERIAL_NUMBER += 1
 
 		results = []
-		for theta in np.linspace(-np.pi, np.pi, num=21, endpoint = True):
-			for phi in np.linspace(-np.pi, np.pi, num=21, endpoint = True):
-				for lam in np.linspace(-np.pi, np.pi, num=21, endpoint = True):
+		for theta in np.linspace(-np.pi, np.pi, num=GRID_SLICE, endpoint = True):
+			for phi in np.linspace(-np.pi, np.pi, num=GRID_SLICE, endpoint = True):
+				for lam in np.linspace(-np.pi, np.pi, num=GRID_SLICE, endpoint = True):
 					results.append([[theta, phi, lam], score([theta, phi, lam])])
 		return max(results, key = lambda x: x[1])[0]
 
