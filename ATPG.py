@@ -286,7 +286,6 @@ class ATPG():
 
 	def get_test_configuration(self, single_fault_list, two_fault_list, initial_state=np.array([1, 0])):
 		configuration_list = []
-		# CAUTION: UNCOMMENT
 		for fault_type in single_fault_list:
 			# for i in range(self.circuit_size):
 			# TODO Potential error
@@ -297,16 +296,15 @@ class ATPG():
 				configuration_list.append(configuration)
 		print("finish build single configuration")
 
-		# CAUTION: UNCOMMENT
-		# if two_fault_list:
-		# 	for fault_type in two_fault_list:
-		# 		template = self.generate_test_template(fault_type[0][0], np.array([1, 0, 0, 0]), self.get_CNOT_optimal_method, cost_ratio=2)
-		# 		for fault_list in fault_type:
-		# 			configuration = self.build_two_configuration(template, fault_list)
-		# 			self.simulate_configuration(configuration)
-		# 			configuration_list.append(configuration)
-		# 		# break
-		# print("finish build two configuration")
+		if two_fault_list:
+			for fault_type in two_fault_list:
+				template = self.generate_test_template(fault_type[0][0], np.array([1, 0, 0, 0]), self.get_CNOT_optimal_method, cost_ratio=2)
+				for fault_list in fault_type:
+					configuration = self.build_two_configuration(template, fault_list)
+					self.simulate_configuration(configuration)
+					configuration_list.append(configuration)
+				# break
+		print("finish build two configuration")
 
 		test_cost = 0
 		initial_time = 0
@@ -499,16 +497,11 @@ class ATPG():
 		faulty_matrix = np.dot(faulty_matrix, np.kron(np.eye(2), faulty[2].gate.to_matrix()))
 
 		parameter_list = [0, 0, 0, 0, 0, 0]
-		# for i in range(SEARCH_TIME):
-			# self.two_gradient(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state)
-		# self.two_annealing(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state)
 		parameter_list = self.two_explore(faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state)
 		parameter_list = self.two_gradient(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state)
-		# faultfree_gate_list.append([Qgate.U3Gate(parameter_list[0], parameter_list[1], parameter_list[2]), Qgate.U3Gate(parameter_list[3], parameter_list[4], parameter_list[5])])
 		faultfree_gate_list.append(self.U_to_gate_set_transpiler_to_gate_list(parameter_list[0:3]) + self.U_to_gate_set_transpiler_to_gate_list(parameter_list[3:]))
 		faultfree_gate_list.append(Qgate.CXGate())
 		
-		# faulty_gate_list.append([Qgate.U3Gate(parameter_list[0], parameter_list[1], parameter_list[2]), Qgate.U3Gate(parameter_list[3], parameter_list[4], parameter_list[5])])
 		faulty_gate_list.append(self.U_to_gate_set_transpiler_to_gate_list(parameter_list[0:3]) + self.U_to_gate_set_transpiler_to_gate_list(parameter_list[3:]))
 		# for qiskit func, so need to append QuantumGate not QuantumGate.gate
 		faulty_gate_list.append(faulty[0].gate)
@@ -556,58 +549,6 @@ class ATPG():
 		print("score: ", score(parameter_list))
 		return parameter_list
 
-	def two_annealing(self, parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state):
-		def score(parameters):
-			return vector_distance(
-				matrix_operation([[U3(parameters[0:3]), U3(parameters[3:6])], faultfree_matrix], faultfree_quantum_state), 
-				matrix_operation([[U3(parameters[0:3]), U3(parameters[3:6])], faulty_matrix], faulty_quantum_state))
-
-		current_sol = parameter_list
-		best_sol = None
-		best_score = INT_MIN
-		T = T_init
-		step = self.step
-		anneal_times = 0
-
-		while T > T_min:
-			current_score = score(current_sol)
-			for i in range(len(current_sol)):
-				current_sol[i] += step
-				up_score = score(current_sol)
-				current_sol[i] -= step*2
-				down_score = score(current_sol)
-				current_sol[i] += step
-
-				if up_score == current_score and down_score == current_score:
-					luck = random.random()
-					if luck < 1/3:
-						current_sol[i] -= step
-					elif luck > 2/3:
-						current_sol[i] += step
-				elif up_score >= current_score and up_score > down_score:
-					current_sol[i] += step
-					step *= step_ratio
-				elif down_score >= current_score and down_score > up_score:
-					current_sol[i] -= step
-					step *= step_ratio
-				elif up_score >= down_score:
-					if random.random() < math.exp((up_score - current_score) / T):
-						current_sol[i] += step
-				else:
-					if random.random() < math.exp((down_score - current_score) / T):
-						current_sol[i] -= step
-
-			current_score = score(current_sol)
-			if current_score > best_score:
-				best_score = current_score
-				best_sol = deepcopy(current_sol)
-
-			T *= T_ratio
-			anneal_times += 1
-
-		parameter_list = best_sol
-		# print("anneal_times: ", anneal_times)
-
 	def two_explore(self, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state):
 		def score(parameters):
 			return vector_distance(
@@ -647,20 +588,14 @@ class ATPG():
 		# parameter list for activation gate
 		parameter_list = [0, 0, 0]
 
-		# print(faultfree[0])
-		# parameter_list = self.single_explore(faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
-		# parameter_list = self.single_gradient(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
-		parameter_list = self.single_annealing_3_dir(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
-		# parameter_list = self.single_deterministic(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
-		# print("after annealing: ", parameter_list)
+		parameter_list = self.single_explore(faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
+		parameter_list = self.single_gradient(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
 		# score = vector_distance(faultfree_quantum_state, faulty_quantum_state)
 
 		faulty_parameter = self.faulty_activation_gate(fault, parameter_list)
-		# faulty_gate_list.append(Qgate.U3Gate(faulty_parameter[0], faulty_parameter[1], faulty_parameter[2]))
 		faulty_gate_list = faulty_gate_list + self.U_to_gate_set_transpiler_to_gate_list(faulty_parameter)
 		faulty_gate_list.append(faulty.gate)
 		
-		# faultfree_gate_list.append(Qgate.U3Gate(parameter_list[0], parameter_list[1], parameter_list[2]))
 		faultfree_gate_list = faultfree_gate_list + self.U_to_gate_set_transpiler_to_gate_list(parameter_list)
 		faultfree_gate_list.append(faultfree.gate)
 		# print(faulty_matrix)
@@ -716,285 +651,6 @@ class ATPG():
 				parameter_list[i] += new_parameter_list[i]
 
 		print("score: ", score(parameter_list))
-		return parameter_list
-
-	def single_annealing_8_dir(self, parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault):
-		anneal_times = 0
-		class candidate_solution():
-			def __init__(self, parameter_list, using_temp, using_step):
-				self.parameter_list = deepcopy(parameter_list)
-				self.using_temp = using_temp
-				self.using_step = using_step
-				self.from_direction = -1
-
-		def score(parameters):
-			return vector_distance(
-				matrix_operation([U3(parameters), faultfree_matrix], faultfree_quantum_state, max_size=2), 
-				matrix_operation([U3(self.faulty_activation_gate(fault, parameters)), faulty_matrix], faulty_quantum_state, max_size=2))
-
-		candidate_solution_list = [candidate_solution(parameter_list, T_init, 2*self.step)]
-		best_score = INT_MIN
-		best_solution = None
-
-		# start annealing
-		while candidate_solution_list:
-			target = candidate_solution_list[0]
-			candidate_solution_list = candidate_solution_list[1:]
-			# stop criteria
-			if target.using_temp < T_min:
-				continue
-			current_score = score(target.parameter_list)
-			# print("current_score: ", current_score)
-			# one processed
-			anneal_times += 1
-			# compare
-			if current_score > best_score:
-				best_score = current_score
-				best_solution = target.parameter_list
-
-			# there should be 8 candidate-candidates
-			candidate_candidates = [candidate_solution(target.parameter_list, target.using_temp*T_ratio, target.using_step*step_ratio) for _ in range(8)]
-			adding_new_candidate = 0
-			for i in range(len(candidate_candidates)):
-				candidate_candidates[i].from_direction = i
-				for j in range(len(target.parameter_list)):
-					if (i >> j) % 2:
-						candidate_candidates[i].parameter_list[j] = target.parameter_list[j] + target.using_step
-					else:
-						candidate_candidates[i].parameter_list[j] = target.parameter_list[j] - target.using_step
-				# preventing going back
-				if i + target.from_direction == 8:
-					continue
-				# cal score and decide
-				this_score = score(candidate_candidates[i].parameter_list)
-				# print("this_score: ", this_score)
-				# if random.random() < math.exp((this_score - current_score) / target.using_temp):
-				if this_score >= current_score:
-					candidate_solution_list.append(candidate_candidates[i])
-					adding_new_candidate += 1
-
-			# print("adding_new_candidate: ", adding_new_candidate)
-			# print("size of list: ", len(candidate_solution_list))
-
-		parameter_list = best_solution
-		print("Annealing times: ", anneal_times)
-		return best_solution
-
-	def single_annealing_3_dir(self, parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault):
-		def score(parameters):
-			return vector_distance(
-				matrix_operation([U3(parameters), faultfree_matrix], faultfree_quantum_state, max_size=2), 
-				matrix_operation([U3(self.faulty_activation_gate(fault, parameters)), faulty_matrix], faulty_quantum_state, max_size=2))
-
-		current_sol = parameter_list
-		best_sol = None
-		best_score = INT_MIN
-		T = T_init
-		step = self.step
-		anneal_times = 0
-
-		while T > T_min:
-			current_score = score(current_sol)
-			for i in range(len(current_sol)):
-				current_sol[i] += step
-				up_score = score(current_sol)
-				current_sol[i] -= step*2
-				down_score = score(current_sol)
-				current_sol[i] += step
-
-				if up_score == current_score and down_score == current_score:
-					luck = random.random()
-					if luck < 1/3:
-						current_sol[i] -= step
-					elif luck > 2/3:
-						current_sol[i] += step
-				elif up_score >= current_score and up_score > down_score:
-					current_sol[i] += step
-					step *= step_ratio
-				elif down_score >= current_score and down_score > up_score:
-					current_sol[i] -= step
-					step *= step_ratio
-				elif up_score >= down_score:
-					if random.random() < math.exp((up_score - current_score) / T):
-						current_sol[i] += step
-				else:
-					if random.random() < math.exp((down_score - current_score) / T):
-						current_sol[i] -= step
-
-			current_score = score(current_sol)
-			if current_score > best_score:
-				best_score = current_score
-				best_sol = deepcopy(current_sol)
-
-			T *= T_ratio
-			anneal_times += 1
-
-		return best_sol
-		# print("anneal_times: ", anneal_times)
-
-	def single_annealing_3_dir_enhance(self, parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault):
-		def score(parameters):
-			return vector_distance(
-				matrix_operation([U3(parameters), faultfree_matrix], faultfree_quantum_state, max_size=2), 
-				matrix_operation([U3(self.faulty_activation_gate(fault, parameters)), faulty_matrix], faulty_quantum_state, max_size=2))
-
-		current_sol = parameter_list
-		best_sol = None
-		best_score = INT_MIN
-		T = T_init
-		step = self.step
-		anneal_times = 0
-
-		while T > T_min:
-			current_score = score(current_sol)
-			for i in range(len(current_sol)):
-				current_sol[i] += step
-				up_score = score(current_sol)
-				current_sol[i] -= step*2
-				down_score = score(current_sol)
-				current_sol[i] += step
-
-				if up_score == current_score and down_score == current_score:
-					luck = random.random()
-					if luck < 1/3:
-						current_sol[i] -= step
-					elif luck > 2/3:
-						current_sol[i] += step
-				elif up_score >= current_score and up_score > down_score:
-					current_sol[i] += step
-					step *= step_ratio
-				elif down_score >= current_score and down_score > up_score:
-					current_sol[i] -= step
-					step *= step_ratio
-				elif up_score >= down_score:
-					if random.random() < math.exp((up_score - current_score) / T):
-						current_sol[i] += step
-					elif random.random() < math.exp((down_score - current_score) / T):
-						current_sol[i] -= step
-				else:
-					if random.random() < math.exp((down_score - current_score) / T):
-						current_sol[i] -= step
-					elif random.random() < math.exp((up_score - current_score) / T):
-						current_sol[i] += step
-
-			current_score = score(current_sol)
-			if current_score > best_score:
-				best_score = current_score
-				best_sol = deepcopy(current_sol)
-
-			T *= T_ratio
-			anneal_times += 1
-
-		return best_sol
-		# print("anneal_times: ", anneal_times)
-
-	def single_annealing_random_dir(self, parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault):
-		def score(parameters):
-			return vector_distance(
-				matrix_operation([U3(parameters), faultfree_matrix], faultfree_quantum_state, max_size=2), 
-				matrix_operation([U3(self.faulty_activation_gate(fault, parameters)), faulty_matrix], faulty_quantum_state, max_size=2))
-
-		current_sol = parameter_list
-		current_score = score(current_sol)
-		best_sol = None
-		best_score = INT_MIN
-		T = T_init
-		step = self.step
-		anneal_times = 0
-		# past_dir = -1
-		past_dir = [0, 0, 0]
-
-		while T > T_min:
-			# # 8 dir
-			# # choose direction
-			# while 1:
-			# 	new_dir = random.randint(0, 7);
-			# 	if new_dir + past_dir != 8:
-			# 		break
-			# # print("new dir: ", new_dir)
-
-			# new_sol = [0, 0, 0]
-			# for i in range(len(current_sol)):
-			# 	if (new_dir >> i) % 2:
-			# 		new_sol[i] = current_sol[i] + step
-			# 	else:
-			# 		new_sol[i] = current_sol[i] - step
-			# new_score = score(new_sol)
-			# past_dir = new_dir
-
-			def get_dir():
-				# choice = [-1, 0, 1] # 27 dir
-				choice = [-1, 1] # 8 dir
-				while 1:
-					rt_dir = [random.choice(choice) for _ in range(3)]
-					if (not all(d == 0 for d in rt_dir)) and (not all(past_dir[i]+rt_dir[i] == 0 for i in range(3))):
-						# prevent not moving
-						# prevent moving backwards
-						break
-				# print("new dir: ", rt_dir)
-				return rt_dir
-			passing = False
-
-			while not passing:
-				new_dir = get_dir()
-				new_sol = [current_sol[i] + new_dir[i]*step for i in range(3)]
-				new_score = score(new_sol)
-
-				if new_score > current_score:
-					current_sol = deepcopy(new_sol)
-					current_score = new_score
-					step *= step_ratio
-					passing = True
-				elif random.random() < math.exp((new_score - current_score) / T):
-					current_sol = deepcopy(new_sol)
-					current_score = new_score
-					passing = True
-
-			if current_score > best_score:
-				best_sol = deepcopy(current_sol)
-				best_score = current_score
-
-			T *= T_ratio
-			anneal_times += 1
-			past_dir = deepcopy(new_dir)
-
-		# print("best_sol: ", best_sol)
-		# parameter_list = deepcopy(best_sol)
-		# parameter_list = best_sol
-		# print("anneal_times: ", anneal_times)
-
-		return best_sol
-
-	def single_deterministic(self, parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault):
-		pass
-		RFO = np.matmul(faulty_matrix.transpose(), faultfree_matrix)
-		w, v = np.linalg.eig(RFO)
-		# w size should be two
-		if np.abs(w[0]) > np.abs(w[1]):
-			v0 = v[0][0]
-			v1 = v[1][0]
-		else:
-			v0 = v[0][1]
-			v1 = v[1][1]
-		p0 = faultfree_quantum_state[0]
-		p1 = faultfree_quantum_state[1]
-
-		best_theta = 0
-		best_phi = 1j
-		best_lam = 1j
-		for theta in np.linspace(-np.pi, np.pi, SEARCH_TIME):
-			phi = 1j*np.log((np.sqrt(2)*p0 - v0) / v1 + 0j)
-			lam = -1j*np.log((p0 - np.sqrt(2)*v0) / p1 + 0j)
-
-			if math.isnan(phi) or math.isnan(lam):
-				continue
-
-			if np.abs(np.imag(phi)*np.imag(lam)) < np.abs(np.imag(best_phi)*np.imag(best_lam)):
-				best_theta = theta
-				best_phi = phi
-				best_lam = lam
-
-		parameter_list = [best_theta, np.real(best_phi), np.real(best_lam)]
 		return parameter_list
 
 	def single_explore(self, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault):
