@@ -182,7 +182,7 @@ class Configuration():
 		print(" # of data:", len(self.real_faultfree_distribution_2))
 
 class ATPG():
-	def __init__(self, circuit_size, gate_set, qr_name='q', cr_name='c'):
+	def __init__(self, circuit_size, gate_set, qr_name = 'q', cr_name = 'c', alpha = 0.99, beta = 0.999):
 		self.circuit_size = circuit_size
 		self.gate_set = gate_set
 		
@@ -194,10 +194,8 @@ class ATPG():
 		self.backend = Aer.get_backend('qasm_simulator')
 		self.step = 0.01
 		self.configuration_list = []
-		self.alpha = 0.99
-		self.beta = 0.9999
-
-		
+		self.alpha = alpha
+		self.beta = beta
 
 		self.basis_gates = [gate.__name__[:-4].lower() for gate in self.gate_set]
 		q = QuantumCircuit(1)
@@ -206,9 +204,6 @@ class ATPG():
 		self.lam = Parameter('lam')
 		q.u(self.theta, self.phi, self.lam, 0)
 		self.effective_u_ckt = transpile(q, basis_gates = self.basis_gates, optimization_level = 3)
-
-		# temporary
-		self.SERIAL_NUMBER = 0
 		
 		return
 	
@@ -241,7 +236,6 @@ class ATPG():
 		value = 0.05*np.pi
 		f = [[value, value, value, value, value, value], [value, value, -value, value, value, -value], [value, -value, value, value, -value, value] , [value, -value, -value, value, -value, -value],
 		[-value, value, value, -value, value, value], [-value, value, -value, -value, value, -value], [-value, -value, value, -value, -value, value] , [-value, -value, -value, -value, -value, -value]]
-		# f = [[value, value, value, value, value, value]]
 		for value in f:
 			one_type_fault = []
 			drop_fault = [] 
@@ -659,21 +653,6 @@ class ATPG():
 				matrix_operation([U3(parameters), faultfree_matrix], faultfree_quantum_state, max_size=2), 
 				matrix_operation([U3(self.faulty_activation_gate(fault, parameters)), faulty_matrix], faulty_quantum_state, max_size=2))
 
-		# with open("./4D_plot/" + str(self.SERIAL_NUMBER) + ".csv", 'w') as f:
-		# 	# explore the parameters
-		# 	f.write("Fault: , " + fault.description + "\n")
-		# 	f.write("faulty_matrix, " + np.array2string(faulty_matrix).replace('\n', '').replace(',', ';') + "\n")
-		# 	f.write("faultfree_matrix, " + np.array2string(faultfree_matrix).replace('\n', '').replace(',', ';') + "\n")
-		# 	f.write("faulty_quantum_state, " + np.array2string(faulty_quantum_state).replace('\n', '').replace(',', ';') + "\n")
-		# 	f.write("faultfree_quantum_state, " + np.array2string(faultfree_quantum_state).replace('\n', '').replace(',', ';') + "\n")
-		# 	f.write("theta, phi, lam, score \n")
-		# 	for theta in np.linspace(-np.pi, np.pi, num=GRID_SLICE, endpoint = True):
-		# 		for phi in np.linspace(-np.pi, np.pi, num=GRID_SLICE, endpoint = True):
-		# 			for lam in np.linspace(-np.pi, np.pi, num=GRID_SLICE, endpoint = True):
-		# 				f.write(str(theta) + ", " + str(phi) + ", " + str(lam) + ", " + str(score([theta, phi, lam])) + "\n")
-
-		# self.SERIAL_NUMBER += 1
-
 		results = []
 		for theta in np.linspace(-np.pi, np.pi, num=GRID_SLICE, endpoint = True):
 			for phi in np.linspace(-np.pi, np.pi, num=GRID_SLICE, endpoint = True):
@@ -707,7 +686,7 @@ class ATPG():
 		# basis_gates = [gate.__name__[:-4].lower() for gate in self.gate_set]
 		# q = QuantumCircuit(1)
 		# q.u(*U_params, 0)
-		# result_ckt = transpile(q, basis_gates = basis_gates, optimization_level = 3)
+		# result_ckt = transpile(q,=-098`basis_gates = basis_gates, optimization_level = 3)
 		result_ckt = self.effective_u_ckt.bind_parameters({self.theta: U_params[0], self.phi: U_params[1], self.lam: U_params[2]})
 		# result_gates = [gate for gate, _, _ in result_ckt.data]
 		return result_ckt
