@@ -1,29 +1,23 @@
 from ATPG import *
 import numpy as np
-# import qiskit
 import qiskit.circuit.library as Qgate
-# import sys
 from warnings import filterwarnings
 filterwarnings('ignore')
-# initial_state = np.dot(np.kron(qiskit.extensions.standard.u2.U2Gate(0, np.pi).to_matrix(), qiskit.extensions.standard.u2.U2Gate(0, np.pi).to_matrix()),
-#      qiskit.extensions.standard.x.CnotGate().to_matrix())
-# initial_state = np.dot(initial_state, np.array([1, 0, 0, 0]))
-# initial_state = np.array([1,0])
-# initial_state = np.dot(qiskit.extensions.standard.u2.U2Gate(0, np.pi).to_matrix(), initial_state)
-# print(qiskit.extensions.standard.x.CnotGate().to_matrix())
-# print(initial_state)
-
-# print("input num of gate type")
 
 gate_set = [Qgate.U3Gate]
 # gate_set = [Qgate.U3Gate, Qgate.U2Gate, Qgate.U1Gate]
 # gate_set = [Qgate.RZGate, Qgate.RXGate]
 
-generator = ATPG(circuit_size = 5, gate_set = gate_set)
-generator.alpha = 0.99
-generator.beta = 0.999
+GRID_SLICE = 11
+SEARCH_TIME = 800
+SAMPLE_TIME = 10000
+MAX_ELEMENT = 50
+MIN_REQUIRED_EFFECT_SIZE = 3
+generator = ATPG(circuit_size = 5, gate_set = gate_set, alpha = 0.99, beta = 0.999, grid_slice = GRID_SLICE, search_time = SEARCH_TIME, sample_time = SAMPLE_TIME, max_element = MAX_ELEMENT, min_required_effect_size = MIN_REQUIRED_EFFECT_SIZE)
 
 coupling_map = [[0, 1], [1, 0], [1, 2], [1, 3], [2, 1], [3, 1], [3, 4], [4, 3]]
-fault_list = generator.get_fault_list(coupling_map)
+value = 0.05*np.pi
+single_fault_list, two_fault_list = generator.get_fault_list(coupling_map = coupling_map, two_qubit_faults = [[value, value, value, value, value, value], [value, value, -value, value, value, -value], [value, -value, value, value, -value, value] , [value, -value, -value, value, -value, -value],
+		[-value, value, value, -value, value, value], [-value, value, -value, -value, value, -value], [-value, -value, value, -value, -value, value] , [-value, -value, -value, -value, -value, -value]])
 
-configuration_list = generator.get_test_configuration(fault_list[0], fault_list[1])
+configuration_list = generator.get_test_configuration(single_fault_list, two_fault_list)

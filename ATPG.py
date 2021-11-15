@@ -1,5 +1,4 @@
 import numpy as np
-# import qiskit
 import math
 import cmath
 from Fault import *
@@ -8,13 +7,11 @@ from scipy.stats import chi2, ncx2
 import qiskit.circuit.library as Qgate
 from qiskit.circuit import Parameter
 from qiskit.circuit.quantumregister import Qubit
-# from qiskit.quantum_info import process_fidelity
 from qiskit.providers.aer.noise import NoiseModel
 from qiskit.providers.aer.noise.errors import standard_errors, ReadoutError
 from qiskit import Aer
 from qiskit import execute, transpile, QuantumRegister, ClassicalRegister, QuantumCircuit
 from qiskit.extensions import *
-# import statsmodels.stats.power as smp
 from qiskit import transpile
 from numpy import pi
 import random
@@ -22,15 +19,9 @@ from QuantumGate import *
 from util import *
 
 random.seed(427427)
-# INT_MIN = 1E-100
-# INT_MAX = 1E15
-# S = 700
-# sample_time = 10000
-# threshold = 0.01
-# r = 0.1
 
 class Configuration():
-	def __init__(self, qc_faulty_list, qc_faultfree, length, fault_list):
+	def __init__(self, qc_faulty_list, qc_faultfree, length, fault_list, sample_time):
 		self.qc_faulty_list = qc_faulty_list
 		self.qc_faultfree = qc_faultfree
 		self.length = length
@@ -44,6 +35,7 @@ class Configuration():
 		self.template = []
 		self.real_faulty_distribution = []
 		self.boundary = 0
+		self.sample_time = sample_time
 
 		#if 1 is simulation result
 		self.real_faulty_distribution_list_1 = []
@@ -68,10 +60,9 @@ class Configuration():
 		# myself += str(self.faultfree_distribution)+"\n"
 		# myself += str(self.faulty_distribution_list[0])+"\n"
 
-		# self.check_bit()
 		return myself
 
-	def cal_testescape_new(self, expectd_faulty_distribution_list, observed_faulty_distribution_list, fault_index=[], alpha=0.99):
+	def cal_testescape(self, expectd_faulty_distribution_list, observed_faulty_distribution_list, fault_index=[], alpha=0.99):
 		max_repetition = self.max_repetition
 		if not fault_index:
 			fault_index = []
@@ -87,7 +78,7 @@ class Configuration():
 			vector_length = len(expected_vector)
 			chi_value = self.boundary#chi2.ppf(alpha, vector_length-1)
 
-			for _ in range(sample_time):
+			for _ in range(self.sample_time):
 				observed_sampled_data = random.choices(range(observed_vector.shape[0]), weights=observed_vector, cum_weights=None, k=max_repetition)
 				observed_data = np.zeros(observed_vector.shape[0])
 				for d in observed_sampled_data:
@@ -97,10 +88,10 @@ class Configuration():
 				chi_statistic = np.sum(delta_square/(expected_data+INT_MIN))
 				if(chi_statistic>chi_value):
 					testescape+=1
-			testescape_list.append(testescape/sample_time)
+			testescape_list.append(testescape/self.sample_time)
 		return testescape_list
 
-	def cal_overkill_new(self, faultfree_distribution, faulty_distribution_list, fault_index=[], alpha=0.99):
+	def cal_overkill(self, faultfree_distribution, faulty_distribution_list, fault_index=[], alpha=0.99):
 		max_repetition = self.max_repetition
 		if not fault_index:
 			fault_index = []
@@ -116,7 +107,7 @@ class Configuration():
 			observed_vector.append(observed_vector_)
 
 		chi_value = self.boundary#chi2.ppf(alpha, observed_vector[0].shape[0]-1)
-		for _ in range(sample_time):
+		for _ in range(self.sample_time):
 			for i in range(len(faulty_distribution_list)):
 				observed_sampled_data = random.choices(range(observed_vector[i].shape[0]), weights=observed_vector[i], cum_weights=None, k=max_repetition)
 				observed_data = np.zeros(observed_vector[i].shape[0])
@@ -128,7 +119,7 @@ class Configuration():
 				if(chi_statistic<=chi_value):
 					overkill+=1
 					break
-		return overkill/sample_time
+		return overkill/self.sample_time
 
 	def simulate_real_circuit(self, qc, backend, shots, times, circuit_size=5):
 		summantion = {}
@@ -182,7 +173,7 @@ class Configuration():
 		print(" # of data:", len(self.real_faultfree_distribution_2))
 
 class ATPG():
-	def __init__(self, circuit_size, gate_set, qr_name = 'q', cr_name = 'c', alpha = 0.99, beta = 0.999):
+	def __init__(self, circuit_size, gate_set, qr_name = 'q', cr_name = 'c', alpha = 0.99, beta = 0.999, grid_slice = 21, search_time = 800, sample_time = 10000, max_element = 50, min_required_effect_size = 3):
 		self.circuit_size = circuit_size
 		self.gate_set = gate_set
 		
@@ -196,6 +187,8 @@ class ATPG():
 		self.configuration_list = []
 		self.alpha = alpha
 		self.beta = beta
+		self.grid_slice = grid_slice
+		self.search_time = search_time
 
 		self.basis_gates = [gate.__name__[:-4].lower() for gate in self.gate_set]
 		q = QuantumCircuit(1)
@@ -207,7 +200,7 @@ class ATPG():
 		
 		return
 	
-	def get_fault_list(self , coupling_map):
+	def get_fault_list(self , coupling_map, two_qubit_faults):
 		single_fault_list = []
 		two_fault_list = []
 
@@ -233,10 +226,7 @@ class ATPG():
 					T_fault.append(Threshold_lopa(gate_type, [qb], threshold=threshold))
 				single_fault_list.append(T_fault)
 
-		value = 0.05*np.pi
-		f = [[value, value, value, value, value, value], [value, value, -value, value, value, -value], [value, -value, value, value, -value, value] , [value, -value, -value, value, -value, -value],
-		[-value, value, value, -value, value, value], [-value, value, -value, -value, value, -value], [-value, -value, value, -value, -value, value] , [-value, -value, -value, -value, -value, -value]]
-		for value in f:
+		for value in two_qubit_faults:
 			one_type_fault = []
 			drop_fault = [] 
 			while len(drop_fault) != len(coupling_map):
@@ -388,7 +378,7 @@ class ATPG():
 		# print(length)
 		# print("faultfree")
 		# print(qc_faultfree)
-		new_configuration = Configuration(qc_faulty_list, qc_faultfree, length, fault_list)
+		new_configuration = Configuration(qc_faulty_list, qc_faultfree, length, fault_list, self.sample_time)
 		for tt in fault_list:
 			print(tt.index)
 		new_configuration.template = template
@@ -424,7 +414,7 @@ class ATPG():
 		qc_faultfree.measure(self.quantumregister, self.classicalregister)
 		# print("faultfree")
 		# print(qc_faultfree)
-		new_configuration = Configuration(qc_faulty_list, qc_faultfree, length, fault_list)
+		new_configuration = Configuration(qc_faulty_list, qc_faultfree, length, fault_list, self.sample_time)
 		return new_configuration
 
 	def generate_test_template(self, fault, quantum_state, activate_function, cost_ratio=1):
@@ -434,7 +424,7 @@ class ATPG():
 
 		# faulty_gate_list, faultfree_gate_list, faulty_quantum_state, faultfree_quantum_state, repetition = activate_function(fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list)
 		# effectsize = cal_effect_size(to_probability(faulty_quantum_state), to_probability(faultfree_quantum_state))
-		for time in range(MAX_ELEMENT):
+		for time in range(self.max_element):
 			faulty_gate_list, faultfree_gate_list, faulty_quantum_state, faultfree_quantum_state, repetition = activate_function(fault, faulty_quantum_state, faultfree_quantum_state, faulty_gate_list, faultfree_gate_list)
 			effectsize = cal_effect_size(to_probability(faulty_quantum_state), to_probability(faultfree_quantum_state))
 			if repetition >= INT_MAX:
@@ -444,7 +434,7 @@ class ATPG():
 				print(time, gate_list, faulty_quantum_state, faultfree_quantum_state)
 				print()
 
-			if effectsize > MIN_REQUIRED_EFFECT_SIZE:
+			if effectsize > self.min_required_effect_size:
 				break
 
 		# overall gradient descent
@@ -491,7 +481,7 @@ class ATPG():
 		faulty_matrix = np.dot(faulty_matrix, np.kron(np.eye(2), faulty[2].gate.to_matrix()))
 
 		parameter_list = [0, 0, 0, 0, 0, 0]
-		parameter_list = self.two_explore(faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state)
+		parameter_list = self.two_grid_search(faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state)
 		parameter_list = self.two_gradient(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state)
 		faultfree_gate_list.append(self.U_to_gate_set_transpiler_to_gate_list(parameter_list[0:3]) + self.U_to_gate_set_transpiler_to_gate_list(parameter_list[3:]))
 		faultfree_gate_list.append(Qgate.CXGate())
@@ -517,7 +507,7 @@ class ATPG():
 				matrix_operation([[U3(parameters[0:3]), U3(parameters[3:6])], faultfree_matrix], faultfree_quantum_state), 
 				matrix_operation([[U3(parameters[0:3]), U3(parameters[3:6])], faulty_matrix], faulty_quantum_state))
 
-		for j in range(SEARCH_TIME):
+		for j in range(self.search_time):
 			new_parameter_list = [0]*len(parameter_list)
 			for i in range(len(parameter_list)):
 				current_score = score(parameter_list)
@@ -543,7 +533,7 @@ class ATPG():
 		print("score: ", score(parameter_list))
 		return parameter_list
 
-	def two_explore(self, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state):
+	def two_grid_search(self, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state):
 		def score(parameters):
 			return vector_distance(
 				matrix_operation([[U3(parameters[0:3]), U3(parameters[3:6])], faultfree_matrix], faultfree_quantum_state), 
@@ -551,16 +541,16 @@ class ATPG():
 
 		# 3+3 method
 		results = []
-		for theta in np.linspace(-np.pi, np.pi, num=GRID_SLICE, endpoint = True):
-			for phi in np.linspace(-np.pi, np.pi, num=GRID_SLICE, endpoint = True):
-				for lam in np.linspace(-np.pi, np.pi, num=GRID_SLICE, endpoint = True):
+		for theta in np.linspace(-np.pi, np.pi, num=self.grid_slice, endpoint = True):
+			for phi in np.linspace(-np.pi, np.pi, num=self.grid_slice, endpoint = True):
+				for lam in np.linspace(-np.pi, np.pi, num=self.grid_slice, endpoint = True):
 					results.append([[theta, phi, lam], score([theta, phi, lam, 0, 0, 0])])
 		first_three = max(results, key = lambda x: x[1])[0]
 
 		results = []
-		for theta in np.linspace(-np.pi, np.pi, num=GRID_SLICE, endpoint = True):
-			for phi in np.linspace(-np.pi, np.pi, num=GRID_SLICE, endpoint = True):
-				for lam in np.linspace(-np.pi, np.pi, num=GRID_SLICE, endpoint = True):
+		for theta in np.linspace(-np.pi, np.pi, num=self.grid_slice, endpoint = True):
+			for phi in np.linspace(-np.pi, np.pi, num=self.grid_slice, endpoint = True):
+				for lam in np.linspace(-np.pi, np.pi, num=self.grid_slice, endpoint = True):
 					results.append([[theta, phi, lam], score(first_three + [theta, phi, lam])])
 		next_three = max(results, key = lambda x: x[1])[0]
 	
@@ -582,7 +572,7 @@ class ATPG():
 		# parameter list for activation gate
 		parameter_list = [0, 0, 0]
 
-		parameter_list = self.single_explore(faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
+		parameter_list = self.single_grid_search(faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
 		parameter_list = self.single_gradient(parameter_list, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault)
 		# score = vector_distance(faultfree_quantum_state, faulty_quantum_state)
 
@@ -616,7 +606,7 @@ class ATPG():
 					matrix_operation([U3(self.faulty_activation_gate(fault, parameters)), faulty_matrix], faulty_quantum_state, max_size=2))
 		# print("score: ", score)
 
-		for j in range(SEARCH_TIME):
+		for j in range(self.search_time):
 			new_parameter_list = [0]*len(parameter_list)
 			for i in range(len(parameter_list)):
 				current_score = score(parameter_list)
@@ -647,16 +637,16 @@ class ATPG():
 		print("score: ", score(parameter_list))
 		return parameter_list
 
-	def single_explore(self, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault):
+	def single_grid_search(self, faulty_matrix, faultfree_matrix, faulty_quantum_state, faultfree_quantum_state, fault):
 		def score(parameters):
 			return vector_distance(
 				matrix_operation([U3(parameters), faultfree_matrix], faultfree_quantum_state, max_size=2), 
 				matrix_operation([U3(self.faulty_activation_gate(fault, parameters)), faulty_matrix], faulty_quantum_state, max_size=2))
 
 		results = []
-		for theta in np.linspace(-np.pi, np.pi, num=GRID_SLICE, endpoint = True):
-			for phi in np.linspace(-np.pi, np.pi, num=GRID_SLICE, endpoint = True):
-				for lam in np.linspace(-np.pi, np.pi, num=GRID_SLICE, endpoint = True):
+		for theta in np.linspace(-np.pi, np.pi, num=self.grid_slice, endpoint = True):
+			for phi in np.linspace(-np.pi, np.pi, num=self.grid_slice, endpoint = True):
+				for lam in np.linspace(-np.pi, np.pi, num=self.grid_slice, endpoint = True):
 					results.append([[theta, phi, lam], score([theta, phi, lam])])
 		return max(results, key = lambda x: x[1])[0]
 
@@ -768,8 +758,8 @@ class ATPG():
 		configuration.max_repetition = temp_list[0]
 		configuration.boundary = temp_list[1]
 
-		configuration.sim_overkill = configuration.cal_overkill_new(configuration.sim_faultfree_distribution, configuration.sim_faulty_distribution_list, fault_index, alpha=self.alpha)
-		configuration.sim_testescape = configuration.cal_testescape_new(configuration.sim_faulty_distribution_list, configuration.sim_faulty_distribution_list, fault_index, alpha=self.alpha)
+		configuration.sim_overkill = configuration.cal_overkill(configuration.sim_faultfree_distribution, configuration.sim_faulty_distribution_list, fault_index, alpha=self.alpha)
+		configuration.sim_testescape = configuration.cal_testescape(configuration.sim_faulty_distribution_list, configuration.sim_faulty_distribution_list, fault_index, alpha=self.alpha)
 		
 		print(configuration)
 
@@ -860,7 +850,7 @@ class ATPG():
 				faultfree_parameter_list = [param.__float__() for param in U_and_faultfree_pair_gate_list[k][0].params]
 				# print("faulty_parameter_list = ", faulty_parameter_list)
 				# print("faultfree_parameter_list", faultfree_parameter_list)
-				for i in range(SEARCH_TIME):
+				for i in range(self.search_time):
 					new_parameter_list = [0 , 0 , 0]
 					for j in range(3):
 						current_score = score(k , faulty_parameter_list , faultfree_parameter_list)
