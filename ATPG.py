@@ -173,7 +173,7 @@ class Configuration():
 		print(" # of data:", len(self.real_faultfree_distribution_2))
 
 class ATPG():
-	def __init__(self, circuit_size, gate_set, qr_name = 'q', cr_name = 'c', alpha = 0.99, beta = 0.999, grid_slice = 21, search_time = 800, sample_time = 10000, max_element = 50, min_required_effect_size = 3):
+	def __init__(self, circuit_size, gate_set, qr_name = 'q', cr_name = 'c', alpha = 0.99, beta = 0.999, grid_slice = 21, search_time = 800, step = 0.01, sample_time = 10000, max_element = 50, min_required_effect_size = 3):
 		self.circuit_size = circuit_size
 		self.gate_set = gate_set
 		
@@ -183,7 +183,7 @@ class ATPG():
 		self.classicalregister = ClassicalRegister(self.circuit_size, self.cr_name)
 		self.noise_model = self.get_noise_model()
 		self.backend = Aer.get_backend('qasm_simulator')
-		self.step = 0.01
+		self.step = step
 		self.configuration_list = []
 		self.alpha = alpha
 		self.beta = beta
@@ -200,9 +200,8 @@ class ATPG():
 		
 		return
 	
-	def get_fault_list(self , coupling_map, two_qubit_faults):
+	def get_single_fault_list(self):
 		single_fault_list = []
-		two_fault_list = []
 
 		# first insert single_fault_list
 		for gate_type in self.gate_set:
@@ -226,6 +225,13 @@ class ATPG():
 					T_fault.append(Threshold_lopa(gate_type, [qb], threshold=threshold))
 				single_fault_list.append(T_fault)
 
+		return single_fault_list
+		# before retrun list before [gate , index , []]
+		# now return QuantumGate
+
+	def get_two_fault_list(self, coupling_map, two_qubit_faults):
+		two_fault_list = []
+
 		for value in two_qubit_faults:
 			one_type_fault = []
 			drop_fault = [] 
@@ -247,7 +253,7 @@ class ATPG():
 			# for i in range(len(coupling_map)):
 			#     one_type_fault.append([CNOT_variation_fault(coupling_map[i], value=value)])
 			two_fault_list.append(deepcopy(one_type_fault))
-		return (single_fault_list, two_fault_list)
+		return two_fault_list
 		# before retrun list before [gate , index , []]
 		# now return QuantumGate
 
