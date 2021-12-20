@@ -19,7 +19,7 @@ generator = ATPG(circuit_size = 5, gate_set = gate_set, alpha = 0.99, beta = 0.9
 coupling_map = [[0, 1], [1, 0], [1, 2], [1, 3], [2, 1], [3, 1], [3, 4], [4, 3]]
 value = 0.05*np.pi
 single_fault_list = generator.get_single_fault_list()
-two_fault_list = generator.get_single_fault_list(coupling_map = coupling_map, two_qubit_faults = \
+two_fault_list = generator.get_two_fault_list(coupling_map = coupling_map, two_qubit_faults = \
 	[[ value,  value,  value,  value,  value,  value], \
 	 [ value,  value, -value,  value,  value, -value], \
 	 [ value, -value,  value,  value, -value,  value], \
