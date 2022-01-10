@@ -24,3 +24,4 @@ class qatg():
 		self.quantumRegister = QuantumRegister(self.circuitSize, self.quantumRegisterName)
 		self.classicalRegister = ClassicalRegister(self.circuitSize, self.classicalRegisterName)
 		self.backend = Aer.get_backend('qasm_simulator')
+		# test
