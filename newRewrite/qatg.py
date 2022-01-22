@@ -38,7 +38,6 @@ class qatg():
 		self.quantumRegister = QuantumRegister(self.circuitSize, self.quantumRegisterName)
 		self.classicalRegister = ClassicalRegister(self.circuitSize, self.classicalRegisterName)
 		self.backend = Aer.get_backend('qasm_simulator')
-
 		self.basisGateSetString = [gate.__name__[:-4].lower() for gate in self.basisGateSet]
 		q = QuantumCircuit(1)
 		self.qiskitParameterTheta = Parameter('theta')
