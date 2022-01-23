@@ -1,4 +1,5 @@
 import numpy as np
+from copy import deepcopy
 from qiskit import Aer
 from qiskit import execute
 from qiskit import transpile, QuantumRegister, ClassicalRegister, QuantumCircuit
@@ -56,5 +57,14 @@ class qatg():
 		# faultfree: gateType, might be qGate?
 		# faulty: singleFault(qbNum, gateType), return qGate or 2x2 numpy matrix?
 		# simulateConfiguration: True, simulate the configuration and generate test repetition
-		# false: don't simulate and repetition = -1
+		# false: don't simulate and repetition = NaN
+
+		configurationList = []
+
+		for singleFault in singleFaults:
+			for basisGate in basisGateSet:
+				for qubit in range(self.circuitSize):
+					template = self.generateTestTemplate(faultfree = basisGate, faulty = singleFault(qubit, basisGate), \
+						initialState = initialState)
+					configuration = self.buildSingleConfiguration
 		pass
