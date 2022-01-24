@@ -7,7 +7,8 @@ from qiskit.providers.aer.noise.errors import standard_errors, ReadoutError
 random.seed(114514)
 
 class qatgConfiguration():
-	def __init__(self, circuitSize: int, basisGateSet, simulationSetup: dict, faultObject):
+	def __init__(self, circuitSize: int, basisGateSet, simulationSetup: dict, \
+			faultObject, faultfreeQuantumCircuit, faultyQuantumCircuit):
 		self.circuitSize = circuitSize
 		self.basisGateSet = basisGateSet
 		self.basisGateSetString = [gate.__name__[:-4].lower() for gate in self.basisGateSet]
@@ -26,6 +27,8 @@ class qatgConfiguration():
 		self.testSampleTime = simulationSetup['testSampleTime']
 
 		self.faultObject = faultObject
+		self.faultfreeQuantumCircuit = faultfreeQuantumCircuit
+		self.faultyQuantumCircuit = faultyQuantumCircuit
 
 	def getNoiseModel(self):
 		# Depolarizing quantum errors
