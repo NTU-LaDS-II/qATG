@@ -12,8 +12,9 @@ from qiskit.circuit.quantumregister import Qubit
 # from qiskit import Aer
 from qiskit import execute, transpile, QuantumRegister, ClassicalRegister, QuantumCircuit
 # from qiskit.extensions import *
-from qiskit import transpile
+# from qiskit import transpile
 from numpy import pi
+from copy import deepcopy
 # import random
 # from QuantumGate import *
 # from util import *
@@ -28,7 +29,15 @@ from numpy import pi
 # c = a + u
 # print(c)
 
-q = QuantumCircuit(1)
+q = QuantumCircuit(2)
 u = Qgate.U3Gate(1 , 1 , 1)
+a = Qgate.U3Gate(2 , 2 , 2)
+c = Qgate.U3Gate(3, 3, 3)
 q.append(u, qargs = [0])
+q.append(c, qargs = [0])
+q.append(a, qargs = [1])
+# print(q)
+# u_prime = deepcopy(u)
+# print(u , u_prime)
+q._data.pop(0)
 print(q)
