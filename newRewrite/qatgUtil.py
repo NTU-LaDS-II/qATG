@@ -16,17 +16,11 @@ def U3(parameterList):
 			 ]],
 			dtype=complex)
 
-def matrixOperationForOneQubit(matrixList, quantumState=[]):
+def matrixOperation(matrixList, quantumState=[]):
 	matrixList = [np.array(matrix) for matrix in matrixList]
 	quantumState = np.array(quantumState)
 	for matrix in matrixList:
 		quantumState = np.dot(matrix, quantumState)
-	return quantumState
-
-def matrixOperationForTwoQubit(matrixList, quantumState=[]):
-	kronProductOfActivationGate = np.kron(matrixList[0], matrixList[1])
-	quantumState = np.dot(matrixList[2], quantumState)
-	quantumState = np.dot(kronProductOfActivationGate, quantumState)
 	return quantumState
 	
 def vectorDistance(vector1, vector2):

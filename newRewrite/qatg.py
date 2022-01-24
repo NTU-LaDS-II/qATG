@@ -189,8 +189,8 @@ class qatg():
 
 		def score(parameters):
 			return vectorDistance(
-				matrixOperationForOneQubit([U3(parameters), originalGateMatrix], faultfreeQuantumState), 
-				matrixOperationForOneQubit(np.concatenate([insertFault2GateList(U2GateSetsTranspile(parameters), faultObject), [faultyGateMatrix]]), faultyQuantumState))
+				matrixOperation([U3(parameters), originalGateMatrix], faultfreeQuantumState), 
+				matrixOperation(np.concatenate([insertFault2GateList(U2GateSetsTranspile(parameters), faultObject), [faultyGateMatrix]]), faultyQuantumState))
 
 		results = []
 		for theta in np.linspace(-np.pi, np.pi, num=self.gridSlice, endpoint = True):
@@ -244,8 +244,8 @@ class qatg():
 		
 		def score(parameters):
 			return vectorDistance(
-				matrixOperationForTwoQubit([U3(parameters[0:3]), U3(parameters[3:6]), originalGateMatrix], faultfreeQuantumState), 
-				matrixOperationForTwoQubit([U3(parameters[0:3]), U3(parameters[3:6]), faultyGateMatrix], faultyQuantumState))
+				matrixOperation([np.kron(U3(parameters[0:3]), U3(parameters[3:6])), originalGateMatrix], faultfreeQuantumState), 
+				matrixOperation([np.kron(U3(parameters[0:3]), U3(parameters[3:6])), faultyGateMatrix], faultyQuantumState))
 		# 3+3 method
 		results = []
 		for theta in np.linspace(-np.pi, np.pi, num=self.gridSlice, endpoint = True):
