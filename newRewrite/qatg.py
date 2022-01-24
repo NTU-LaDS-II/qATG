@@ -143,7 +143,7 @@ class qatg():
 		aboveActivationGate = U2GateSetsTranspile(optimalParameterList[0:3])
 		belowActivationGate = U2GateSetsTranspile(optimalParameterList[3:6])
 		toalActivationGate = [[aboveGate, belowGate] for aboveGate, belowGate in zip(aboveActivationGate, belowActivationGate)]
-		return np.concatenate([toalActivationGate, [originalGateMatrix, None]])
+		return toalActivationGate + [originalGateMatrix]
 
 	def twoGridSearch(self, faultyGateMatrix, originalGateMatrix, faultyQuantumState, faultfreeQuantumState):
 		# for only CNOT have fault

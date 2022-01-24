@@ -23,5 +23,7 @@ from numpy import pi
 # print(u)
 # print(u.params)
 
-u = [1 , None]
-print(u)
+u = [1]
+a = [[1, 2], [3, 4]]
+c = a + u
+print(c)
