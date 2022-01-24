@@ -70,7 +70,7 @@ class qatg():
 			if not issubclass(singleFault, qatgFault):
 				raise TypeError(f"{singleFault} should be subclass of qatgFault")
 			template = self.generateTestTemplate(faultObject = singleFault, initialState = singleInitialState, findActivationGate = findSingleElement)
-				
+			configuration = self.buildSingleConfiguration(template, singleFault)
 
 		for twoFault in twoFaultList:
 			if not issubclass(singleFault, qatgFault):
@@ -79,6 +79,20 @@ class qatg():
 
 		pass
 
+	def buildSingleConfiguration(self, template, singleFault):
+		length = len(template)
+		qcList = []
+		qcFaultFree = QuantumCircuit(self.quantumRegister, self.classicalregister)
+		for gate in template:
+			for qbIndex in range(self.circuitSize):
+				qcFaultFree.append(gate, [qbIndex])
+				qcFaultFree.append(Qgate.Barrier(qbIndex))
+
+		# for qbIndex in range(self.circuitSize):
+		# 	Qc = QuantumCircuit(self.quantumRegister, self.classicalregister)
+		# 	for gate in template:
+		# 		Qc.append(gate, [qbIndex])
+		# 		Qc.append(Qgate.Barrier(qbIndex))
 	def getTestTemplate(self, faultObject, initialState, findActivationGate):
 		templateGateList = [] # list of qGate
 
