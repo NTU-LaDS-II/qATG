@@ -143,13 +143,15 @@ class qatg():
 		faultyGateList = [activationGatePair if isinstance(activationGatePair, list) else twoFault.getFaulty(activationGatePair.params) for activationGatePair in template]
 		
 		for activationGatePair in faultyGateList:
-			if isinstance(activationGatePair, list):
+			if len(activationGatePair) == 2:
 				qcfaulty.append(activationGatePair[0], [controlQubit])
 				qcfaulty.append(activationGatePair[1], [targetQubit])
 				
 			else:
-				qcfaulty.append(activationGatePair, [controlQubit, targetQubit])
-			
+				qcFaulty.append(activationGatePair[0], [controlQubit])
+				qcfaulty.append(activationGatePair[1], [controlQubit, targetQubit])
+				qcFaulty.append(activationGatePair[2], [targetQubit])
+
 			qcfaulty.append(Qgate.Barrier(controlQubit))
 			qcfaulty.append(Qgate.Barrier(targetQubit))
 		qcfaulty.measure(self.quantumRegister, self.classicalregister)
