@@ -24,7 +24,7 @@ class qatg():
 		
 		# list[qGate]
 		self.basisGateSet = basisGateSet
-		self.couplingMap = couplingMap
+		self.couplingMap = couplingMap # not used
 		self.quantumRegisterName = quantumRegisterName
 		self.classicalRegisterName = classicalRegisterName
 		self.gridSlice = gridSlice
@@ -118,7 +118,10 @@ class qatg():
 			qcFaulty.append(gate, [qbIndex])
 			qcFaulty.append(Qgate.Barrier(qbIndex))
 		qcFaulty.measure(self.quantumRegister, self.classicalregister)
-	
+		
+		return qatgConfiguration(self.circuitSize, self.basisGateSet, self.simulationSetup, \
+			singleFault, qcFaultFree, qcFaulty)
+
 	def buildTwoConfiguration(self, template, twoFault):
 		length = len(template)
 		qcFaultFree = QuantumCircuit(self.quantumRegister, self.classicalregister)
@@ -150,7 +153,6 @@ class qatg():
 			
 			qcfaulty.append(Qgate.Barrier(controlQubit))
 			qcfaulty.append(Qgate.Barrier(targetQubit))
-		
 		qcfaulty.measure(self.quantumRegister, self.classicalregister)
 	
 

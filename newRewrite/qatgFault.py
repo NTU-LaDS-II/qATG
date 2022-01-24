@@ -10,6 +10,8 @@ class qatgFault(abc.ABC):
 		if isinstance(qubit, int):
 			qubit = [qubit]
 		self.qubit = qubit
+		if len(qubit) != gateType.num_qubits:
+			raise ValueError("the number of qubits the gate acts on and the number of input qubits does not match.")
 		self.description = description
 
 	def __str__(self):
@@ -25,7 +27,7 @@ class qatgFault(abc.ABC):
 	def getOriginalGateParameters(self):
 		return NotImplemented
 
-	def getOriginalGate(self, qubit):
+	def getOriginalGate(self):
 		return self.gateType(*self.getOriginalGateParameters())
 
 	@abc.abstractmethod

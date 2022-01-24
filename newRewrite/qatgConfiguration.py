@@ -45,52 +45,31 @@ class qatgConfiguration():
 		return noiseModel
 
 	def simulate(self):
-		self.repetition_list = []
-		self.sim_faultfree_distribution = []
-		self.sim_faulty_distribution_list = []
-		self.max_repetition = 0
+		self.simulatedFaultfreeDistribution = []
+		self.simulatedFaultyDistribution = []
+		self.repetition = 0
 		self.boundary = 0 
 		
-		job_sim = execute(self.qc_faultfree, self.backend, noise_model = self.noiseModel, shots = self.simulationShots)
+		simulateJob = execute(self.faultfreeQuantumCircuit, self.backend, noise_model = self.noiseModel, shots = self.simulationShots)
+		counts = simulateJob.result().get_counts()
 		
-		summantion_free = {}
-		for i in range(2**self.circuit_size):
-			summantion_free['{0:b}'.format(i).zfill(self.circuit_size)] = 0
-		counts = job_sim.result().get_counts()
+		self.simulatedFaultfreeDistribution = [0] * (2 ** self.circuitSize)
 		for i in counts:
-			summantion_free[i] += counts[i]
-		self.sim_faultfree_distribution = to_np(summantion_free)
+			self.simulatedFaultfreeDistribution[int(i, 2)] = counts[i]
+		self.simulatedFaultfreeDistribution = self.simulatedFaultfreeDistribution / np.sum(self.simulatedFaultfreeDistribution)
 
-		for number, qc_faulty in enumerate(self.qc_faulty_list):
-			job_sim = execute(qc_faulty, self.backend, noise_model = self.noiseModel, shots = self.simulationShots)
+		simulateJob = execute(self.faultyQuantumCircuit, self.backend, noise_model = self.noiseModel, shots = self.simulationShots)
+		counts = simulateJob.result().get_counts()
 
-			summantion_faulty = {}
-			for i in range(2**self.circuit_size):
-				summantion_faulty['{0:b}'.format(i).zfill(self.circuit_size)] = 0
-			counts = job_sim.result().get_counts()
-			for i in counts:
-				summantion_faulty[i] += counts[i]
-			self.sim_faulty_distribution_list.append(to_np(summantion_faulty)) 
+		self.simulatedFaultyDistribution = [0] * (2 ** self.circuitSize)
+		for i in counts:
+			self.simulatedFaultyDistribution[int(i, 2)] = counts[i]
+		self.simulatedFaultyDistribution = self.simulatedFaultyDistribution / np.sum(self.simulatedFaultyDistribution)
 
-			faulty_distribution, faultfree_distribution = compression_forfault(self.sim_faulty_distribution_list[-1], self.sim_faultfree_distribution, deepcopy(self.fault_list[number].index))
-			repetition, boundary = compute_repetition(faulty_distribution, faultfree_distribution, self.alpha, self.beta)
-			self.repetition_list.append((repetition, boundary))
+		self.repetition, self.boundary = compute_repetition(faulty_distribution, faultfree_distribution, self.alpha, self.beta)
 
-		fault_index = []
-		for f in self.fault_list:
-			fault_index.append(f.index)
-
-		temp_list = [0, 0]
-		for c in self.repetition_list:
-			if c[0] > temp_list[0]:
-				temp_list[0] = c[0]
-				temp_list[1] = c[1]
-
-		self.max_repetition = temp_list[0]
-		self.boundary = temp_list[1]
-
-		self.sim_overkill = self.calOverkill(self.sim_faultfree_distribution, self.sim_faulty_distribution_list, fault_index, alpha=self.alpha)
-		self.sim_testescape = self.calTestescape(self.sim_faulty_distribution_list, self.sim_faulty_distribution_list, fault_index, alpha=self.alpha)
+		self.sim_overkill = self.calOverkill(self.simulatedFaultfreeDistribution, self.simulatedFaultyDistribution, fault_index, alpha=self.alpha)
+		self.sim_testescape = self.calTestescape(self.simulatedFaultyDistribution, self.simulatedFaultyDistribution, fault_index, alpha=self.alpha)
 		
 		return
 
