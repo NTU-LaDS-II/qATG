@@ -133,7 +133,7 @@ class qatg():
 				qcFaultFree.append(activationGatePair[1], [targetQubit])
 				
 			else:
-				qcFaultFree.append(Qgate.CXGate(), [controlQubit, targetQubit])
+				qcFaultFree.append(activationGatePair, [controlQubit, targetQubit])
 			
 			qcFaultFree.append(Qgate.Barrier(controlQubit))
 			qcFaultFree.append(Qgate.Barrier(targetQubit))
@@ -141,13 +141,14 @@ class qatg():
 		qcFaultFree.measure(self.quantumRegister, self.classicalregister)
 		qcFaulty = QuantumCircuit(self.quantumRegister, self.classicalregister)
 		faultyGateList = [activationGatePair if isinstance(activationGatePair, list) else twoFault.getFaulty(activationGatePair.params) for activationGatePair in template]
+		
 		for activationGatePair in faultyGateList:
 			if isinstance(activationGatePair, list):
 				qcfaulty.append(activationGatePair[0], [controlQubit])
 				qcfaulty.append(activationGatePair[1], [targetQubit])
 				
 			else:
-				qcfaulty.append(Qgate.CXGate(), [controlQubit, targetQubit])
+				qcfaulty.append(activationGatePair, [controlQubit, targetQubit])
 			
 			qcfaulty.append(Qgate.Barrier(controlQubit))
 			qcfaulty.append(Qgate.Barrier(targetQubit))
@@ -186,8 +187,8 @@ class qatg():
 
 		def score(parameters):
 			return vectorDistance(
-				matrixOperation([U3(parameters), originalGateMatrix], faultfreeQuantumState), 
-				matrixOperation(np.concatenate([insertFault2GateList(U2GateSetsTranspile(parameters), faultObject), [faultyGateMatrix]]), faultyQuantumState))
+				matrixOperationForOneQubit([U3(parameters), originalGateMatrix], faultfreeQuantumState), 
+				matrixOperationForOneQubit(np.concatenate([insertFault2GateList(U2GateSetsTranspile(parameters), faultObject), [faultyGateMatrix]]), faultyQuantumState))
 
 		results = []
 		for theta in np.linspace(-np.pi, np.pi, num=self.gridSlice, endpoint = True):
@@ -235,9 +236,8 @@ class qatg():
 		# for only CNOT have fault
 		def score(parameters):
 			return vectorDistance(
-				matrixOperation([U3(parameters[0:3]), U3(parameters[3:6]), originalGateMatrix], faultfreeQuantumState), 
-				matrixOperation([U3(parameters[0:3]), U3(parameters[3:6]), faultyGateMatrix], faultyQuantumState))
-
+				matrixOperationForTwoQubit([U3(parameters[0:3]), U3(parameters[3:6]), originalGateMatrix], faultfreeQuantumState), 
+				matrixOperationForTwoQubit([U3(parameters[0:3]), U3(parameters[3:6]), faultyGateMatrix], faultyQuantumState))
 		# 3+3 method
 		results = []
 		for theta in np.linspace(-np.pi, np.pi, num=self.gridSlice, endpoint = True):
