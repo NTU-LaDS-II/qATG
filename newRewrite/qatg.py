@@ -87,36 +87,72 @@ class qatg():
 				raise TypeError(f"{singleFault} should be subclass of qatgFault")
 			template = self.generateTestTemplate(faultObject = singleFault, initialState = singleInitialState, findActivationGate = findSingleElement)
 			configuration = self.buildSingleConfiguration(template, singleFault)
+			configurationList.append(configuration)
 
 		for twoFault in twoFaultList:
 			if not issubclass(singleFault, qatgFault):
 				raise TypeError(f"{twoFault} should be subclass of qatgFault")
 			template = self.generateTestTemplate(faultObject = twoFault, initialState = twoInitialState, findActivationGate = findTwoElement)
-
+			configuration = self.buildTwoConfiguration(template, twoFault)
+			configurationList.append(configuration)
 		pass
 
 	def buildSingleConfiguration(self, template, singleFault):
 		length = len(template)
 		qcFaultFree = QuantumCircuit(self.quantumRegister, self.classicalregister)
+		qbIndex = singleFault.getQubit()[0]
 		for gate in template:
-			for qbIndex in range(self.circuitSize):
-				qcFaultFree.append(gate, [qbIndex])
-				qcFaultFree.append(Qgate.Barrier(qbIndex))
+			# for qbIndex in range(self.circuitSize):
+			qcFaultFree.append(gate, [qbIndex])
+			qcFaultFree.append(Qgate.Barrier(qbIndex))
 		qcFaultFree.measure(self.quantumRegister, self.classicalregister)
 
-		qcFaulty = deepcopy(qcFaultFree)
-		qbIndex = singleFault.getQubit()[0]
+		# qcFaulty = deepcopy(qcFaultFree)
 		# remove the qgate of the qbIndex row
-		for i in range(2*length):
-			qcFaulty._data.pop(qbIndex)
-
+		# for i in range(2*length):
+		# 	qcFaulty._data.pop(qbIndex)
+		qcFaulty = QuantumCircuit(self.quantumRegister, self.classicalregister)
 		faultyGateList = [singleFault.getFaulty(gate.params) if isinstance(gate, singleFault.getGateType()) else gate for gate in template]
 		# add faulty gate to the qbIndex row
 		for gate in faultyGateList:
 			qcFaulty.append(gate, [qbIndex])
 			qcFaulty.append(Qgate.Barrier(qbIndex))
 		qcFaulty.measure(self.quantumRegister, self.classicalregister)
+	
+	def buildTwoConfiguration(self, template, twoFault):
+		length = len(template)
+		qcFaultFree = QuantumCircuit(self.quantumRegister, self.classicalregister)
+		qbIndex = singleFault.getQubit()
+		controlQubit = qbIndex[0]
+		targetQubit = qbIndex[1]
+		for activationGatePair in template:
+			if isinstance(activationGatePair, list):
+				qcFaultFree.append(activationGatePair[0], [controlQubit])
+				qcFaultFree.append(activationGatePair[1], [targetQubit])
+				
+			else:
+				qcFaultFree.append(Qgate.CXGate(), [controlQubit, targetQubit])
+			
+			qcFaultFree.append(Qgate.Barrier(controlQubit))
+			qcFaultFree.append(Qgate.Barrier(targetQubit))
 		
+		qcFaultFree.measure(self.quantumRegister, self.classicalregister)
+		qcFaulty = QuantumCircuit(self.quantumRegister, self.classicalregister)
+		faultyGateList = [activationGatePair if isinstance(activationGatePair, list) else twoFault.getFaulty(activationGatePair.params) for activationGatePair in template]
+		for activationGatePair in faultyGateList:
+			if isinstance(activationGatePair, list):
+				qcfaulty.append(activationGatePair[0], [controlQubit])
+				qcfaulty.append(activationGatePair[1], [targetQubit])
+				
+			else:
+				qcfaulty.append(Qgate.CXGate(), [controlQubit, targetQubit])
+			
+			qcfaulty.append(Qgate.Barrier(controlQubit))
+			qcfaulty.append(Qgate.Barrier(targetQubit))
+		
+		qcfaulty.measure(self.quantumRegister, self.classicalregister)
+	
+
 	def getTestTemplate(self, faultObject, initialState, findActivationGate):
 		templateGateList = [] # list of qGate
 

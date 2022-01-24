@@ -30,4 +30,5 @@ class qatgFault(abc.ABC):
 
 	@abc.abstractmethod
 	def getFaulty(self, parameters):
+		# for CNOT [Acti1, CNOT, Acti2]
 		return NotImplemented
