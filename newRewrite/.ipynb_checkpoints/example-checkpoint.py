@@ -40,12 +40,12 @@ class myCNOTFault(qatgFault):
 
 # couplingMap = [[0, 1], [1, 0], [1, 2], [1, 3], [2, 1], [3, 1], [3, 4], [4, 3]]
 couplingMap = [[0, 1]]
-twoFaultList = [myCNOTFault(coupling, [0.05] * 6) for coupling in couplingMap]
+twoFaultList = [myCNOTFault(coupling, [0.05 * np.pi] * 6) for coupling in couplingMap]
 
 		
 generator = qatg(circuitSize = 5, basisGateSet = [qGate.UGate])
 generator.configurationSimulationSetup()
 configurationList = generator.getTestConfiguration(singleFaultList, twoFaultList)
 
-# for configuration in configurationList:
-# 	print(configuration)
+for configuration in configurationList:
+	print(configuration)

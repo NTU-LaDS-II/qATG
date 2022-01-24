@@ -88,7 +88,6 @@ class qatg():
 			if simulateConfiguration:
 				configuration.simulate()
 			configurationList.append(configuration)
-			print(configuration)
 
 		for twoFault in twoFaultList:
 			if not issubclass(type(twoFault), qatgFault):

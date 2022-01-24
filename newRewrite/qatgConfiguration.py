@@ -1,5 +1,6 @@
 import random
 import numpy as np
+from math import ceil
 from scipy.stats import chi2, ncx2
 from qiskit import Aer
 from qiskit import execute
@@ -49,7 +50,7 @@ class qatgConfiguration():
 		rt += "\tCost: " + str(len(self.faultfreeQuantumCircuit) * self.repetition) + "\n"
 		rt += "Overkill: "+str(self.simulatedOverkill)
 		rt += "\tTest Escape: " + str(self.simulatedTestescape) + "\n"
-		rt += "Circuit: \n" + str(self.faultfreeQuantumCircuit)
+		# rt += "Circuit: \n" + str(self.faultfreeQuantumCircuit)
 
 		return rt
 
@@ -148,5 +149,5 @@ class qatgConfiguration():
 			deltaSquare = np.square(expectedDistribution - observedDistribution)
 			chiStatistic = np.sum(deltaSquare / (expectedDistribution + INT_MIN))
 			if chiStatistic > chiValue:
-				testescape += 1
-		return testescape / self.testSampleTime
+				testEscape += 1
+		return testEscape / self.testSampleTime
