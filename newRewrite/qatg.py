@@ -235,12 +235,7 @@ class qatg():
 		# for only CNOT have fault
 		originalGateParameters = faultObject.getOriginalGateParameters()
 		originalGateMatrix = faultObject.getOriginalGate().to_matrix()
-		faultyGateMatrixList = faultObject.getFaultyGate(originalGateParameters) # np.array(gate)
-		faultyGateMatrixList = [gate.to_matrix() for gate in faultyGateMatrixList]
-		faultOne = np.kron(faultyGateMatrixList[0], np.eye(2))
-		originalCnot = faultyGateMatrixList[1]
-		faultTwo = np.kron(faultyGateMatrixList[2], np.eye(2))
-		faultyGateMatrix = np.matmul(np.matmul(faultOne, originalCnot), faultTwo)
+		faultyGateMatrix = faultObject.getFaultyGate(originalGateParameters).to_matrix()
 		
 		def score(parameters):
 			return vectorDistance(
