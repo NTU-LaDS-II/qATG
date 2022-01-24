@@ -24,7 +24,7 @@ class qatg():
 		
 		# list[qGate]
 		self.basisGateSet = basisGateSet
-		self.couplingMap = couplingMap
+		self.couplingMap = couplingMap # not used
 		self.quantumRegisterName = quantumRegisterName
 		self.classicalRegisterName = classicalRegisterName
 		self.gridSlice = gridSlice
@@ -116,6 +116,9 @@ class qatg():
 			qcFaulty.append(gate, [qbIndex])
 			qcFaulty.append(Qgate.Barrier(qbIndex))
 		qcFaulty.measure(self.quantumRegister, self.classicalregister)
+
+		return qatgConfiguration(self.circuitSize, self.basisGateSet, self.simulationSetup, \
+			singleFault, qcFaultFree, qcFaulty)
 		
 	def getTestTemplate(self, faultObject, initialState, findActivationGate):
 		templateGateList = [] # list of qGate

@@ -1,5 +1,4 @@
 import numpy as np
-import math
 
 def U3(parameterList):
 	# theta=0, phi=0, lam=0
@@ -32,3 +31,14 @@ def vectorDistance(vector1, vector2):
 
 def toProbability(probability):
 	return np.array(probability*np.conj(probability), dtype=float)
+
+def prob2Distribution(vector):
+	if type(vector) == dict:
+		distribution = np.zeros(len(vector))
+		for i in vector:
+			distribution[int(i, 2)] = vector[i]
+	else:
+		distribution = np.array(vector)
+
+	distribution = distribution/np.sum(distribution)
+	return distribution
