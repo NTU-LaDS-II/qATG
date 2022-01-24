@@ -6,19 +6,22 @@ from Gate import *
 from scipy.stats import chi2, ncx2
 import qiskit.circuit.library as Qgate
 from qiskit.circuit import Parameter
-from qiskit.circuit.quantumregister import Qubit
-from qiskit.providers.aer.noise import NoiseModel
-from qiskit.providers.aer.noise.errors import standard_errors, ReadoutError
-from qiskit import Aer
-from qiskit import execute, transpile, QuantumRegister, ClassicalRegister, QuantumCircuit
-from qiskit.extensions import *
+# from qiskit.circuit.quantumregister import Qubit
+# from qiskit.providers.aer.noise import NoiseModel
+# from qiskit.providers.aer.noise.errors import standard_errors, ReadoutError
+# from qiskit import Aer
+# from qiskit import execute, transpile, QuantumRegister, ClassicalRegister, QuantumCircuit
+# from qiskit.extensions import *
 from qiskit import transpile
 from numpy import pi
-import random
-from QuantumGate import *
-from util import *
+# import random
+# from QuantumGate import *
+# from util import *
 
 
-u = Qgate.U3Gate(1 , 1 , 1)
+# u = Qgate.U3Gate(1 , 1 , 1)
+# print(u)
+# print(u.params)
+
+u = [1 , None]
 print(u)
-print(u.params)
