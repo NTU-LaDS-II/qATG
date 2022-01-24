@@ -34,10 +34,21 @@ class qatgConfiguration():
 
 		self.faultfreeDistribution = []
 		self.faultyDistribution = []
-		self.repetition = 0
-		self.boundary = 0
-		self.simulatedOverkill = 1
-		self.simulatedTestescape = 1
+		self.repetition = np.nan
+		self.boundary = np.nan
+		self.simulatedOverkill = np.nan
+		self.simulatedTestescape = np.nan
+
+	def __str__(self):
+		rt = ""
+		rt += "Target fault: " + str(faultObject) + "\n"
+		rt += "Length: " + str(len(self.faultfreeQuantumCircuit))
+		rt += "\tRepetition: " + str(self.repetition)
+		rt += "\tCost: " + str(len(self.faultfreeQuantumCircuit) * self.repetition) + "\n"
+		rt += "Overkill: "+str(self.simulatedOverkill)
+		rt += "\tTest Escape: " + str(self.simulatedTestescape) + "\n"
+
+		return rt
 
 	def getNoiseModel(self):
 		# Depolarizing quantum errors
@@ -54,13 +65,6 @@ class qatgConfiguration():
 		return noiseModel
 
 	def simulate(self):
-		self.faultfreeDistribution = []
-		self.faultyDistribution = []
-		self.repetition = 0
-		self.boundary = 0
-		self.simulatedOverkill = 1
-		self.simulatedTestescape = 1
-		
 		simulateJob = execute(self.faultfreeQuantumCircuit, self.backend, noise_model = self.noiseModel, shots = self.simulationShots)
 		counts = simulateJob.result().get_counts()
 		
@@ -79,8 +83,8 @@ class qatgConfiguration():
 
 		self.repetition, self.boundary = self.calRepetition(self.faultyDistribution, self.faultfreeDistribution, self.targetAlpha, self.targetBeta)
 
-		self.simulatedOverkill = self.calOverkill(self.faultfreeDistribution, self.faultyDistribution, alpha = self.targetAlpha)
-		self.simulatedTestescape = self.calTestescape(self.faultyDistribution, self.faultyDistribution, alpha = self.targetAlpha)
+		self.simulatedOverkill = self.calOverkill(self.faultfreeDistribution, self.faultyDistribution)
+		self.simulatedTestescape = self.calTestEscape(self.faultyDistribution)
 		
 		return
 
@@ -109,16 +113,45 @@ class qatgConfiguration():
 		
 		return ceil(repetition), boundary
 
-	def calTestescape(self, faultyDistribution, faultfreeDistribution, alpha):
-		pass
+	def calOverkill(self, faultfreeDistribution, faultyDistribution):
+		overkill = 0
+		expectedDistribution = faultfreeDistribution * self.repetition
+		observedDistribution = faultyDistribution
+		chiValue = self.boundary
 
-	def calOverkill(self, faultyDistribution, faultfreeDistribution, alpha):
-		pass
+		for _ in range(self.testSampleTime):
+			sampledData = random.choices(range(observedDistribution.shape[0]), weights = observedDistribution, k = self.repetition)
+			observedDistribution = np.zeros(observedDistribution.shape[0])
+			for d in sampledData:
+				observedDistribution[d] += 1
+
+			deltaSquare = np.square(expectedDistribution - observedDistribution)
+			chiStatistic = np.sum(deltaSquare/(expectedDistribution+INT_MIN))
+			if chiStatistic <= chiValue:
+				overkill += 1
+		return overkill / self.testSampleTime
+
+	def calTestEscape(self, faultyDistribution):
+		testEscape = 0			
+		expectedDistribution = faultyDistribution * self.repetition
+		chiValue = self.boundary
+
+		for _ in range(self.testSampleTime):
+			sampledData = random.choices(range(faultyDistribution.shape[0]), weights = faultyDistribution, k = self.repetition)
+			observedDistribution = np.zeros(faultyDistribution.shape[0])
+			for d in sampledData:
+				observedDistribution[d] += 1
+
+			deltaSquare = np.square(expectedDistribution - observedDistribution)
+			chiStatistic = np.sum(deltaSquare / (expectedDistribution + INT_MIN))
+			if chiStatistic > chiValue:
+				testescape += 1
+		return testescape / self.testSampleTime
 
 	@staticmethod
 	def calEffectSize(faultyQuantumState, faultfreeQuantumState):
 		deltaSquare = np.square(faultyQuantumState - faultfreeQuantumState)
-		effectSize = np.sum(delta_square / (faultyQuantumState + INT_MIN))
+		effectSize = np.sum(deltaSquare / (faultyQuantumState + INT_MIN))
 		effectSize = np.sqrt(effectSize)
 		if effectSize < 0.1:
 			effectSize = 0.1

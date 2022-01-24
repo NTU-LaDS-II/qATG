@@ -289,7 +289,7 @@ class qatg():
 	@staticmethod
 	def calEffectSize(faultyQuantumState, faultfreeQuantumState):
 		deltaSquare = np.square(faultyQuantumState - faultfreeQuantumState)
-		effectSize = np.sum(delta_square / (faultyQuantumState + INT_MIN))
+		effectSize = np.sum(deltaSquare / (faultyQuantumState + INT_MIN))
 		effectSize = np.sqrt(effectSize)
 		if effectSize < 0.1:
 			effectSize = 0.1
