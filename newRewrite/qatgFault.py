@@ -1,5 +1,4 @@
 import abc
-import numpy as np
 import qiskit.circuit.library as qGate
 from qiskit.circuit.gate import Gate
 

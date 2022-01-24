@@ -1,24 +1,22 @@
 import numpy as np
 from copy import deepcopy
-from qiskit import Aer
-from qiskit import execute
-from qiskit import transpile, QuantumRegister, ClassicalRegister, QuantumCircuit
+from qiskit import transpile
+from qiskit import QuantumRegister, ClassicalRegister, QuantumCircuit
 from qiskit.circuit import Parameter
 import qiskit.circuit.library as qGate
 
 from qatgFault import qatgFault
-from qatgUtil import U3, CNOT
+from qatgUtil import U3, CNOT, matrixOperation, vectorDistance
+from qatgConfiguration import qatgConfiguration
 
 INT_MIN = 1E-100
 
 class qatg():
 	def __init__(self, circuitSize: int = None, basisGateSet: list[qGate], couplingMap: list[list], \
 			quantumRegisterName: str = 'q', classicalRegisterName: str = 'c', \
-			targetAlpha: float = 0.99, targetBeta: float = 0.999, \
 			gridSlice: int = 21, \
 			gradientDescentSearchTime: int = 800, gradientDescentStep: float = 0.01, \
-			maxTestTemplateSize: int = 50, minRequiredEffectSize: float = 3, \
-			testSampleTime: int = 10000):
+			maxTestTemplateSize: int = 50, minRequiredEffectSize: float = 3):
 		if not isinstance(circuitSize, int):
 			raise TypeError('circuitSize must be int')
 		if circuitSize <= 0:
@@ -29,18 +27,14 @@ class qatg():
 		self.couplingMap = couplingMap
 		self.quantumRegisterName = quantumRegisterName
 		self.classicalRegisterName = classicalRegisterName
-		self.targetAlpha = targetAlpha
-		self.targetBeta = targetBeta
 		self.gridSlice = gridSlice
 		self.gradientDescentSearchTime = gradientDescent
 		self.gradientDescentStep = gradientDescentStep
 		self.maxTestTemplateSize = maxTestTemplateSize
 		self.minRequiredEffectSize = minRequiredEffectSize
-		self.testSampleTime = testSampleTime
 
 		self.quantumRegister = QuantumRegister(self.circuitSize, self.quantumRegisterName)
 		self.classicalRegister = ClassicalRegister(self.circuitSize, self.classicalRegisterName)
-		self.backend = Aer.get_backend('qasm_simulator')
 		self.basisGateSetString = [gate.__name__[:-4].lower() for gate in self.basisGateSet]
 		q = QuantumCircuit(1)
 		self.qiskitParameterTheta = Parameter('theta')
@@ -51,12 +45,34 @@ class qatg():
 			self.effectiveUGateCircuit = transpile(q, basis_gates = self.basisGateSetString, optimization_level = 3)
 		except Exception as e:
 			raise e
+
+		self.simulationSetup = None
+		return
+
+	def configurationSimulationSetup(self, oneQubitErrorProb = 0.001, twoQubitErrorProb = 0.1, \
+			zeroReadoutErrorProb = [0.985, 0.015], oneReadoutErrorProb = [0.015, 0.985], \
+			targetAlpha: float = 0.99, targetBeta: float = 0.999, \
+			simulationShots: int = 200000, testSampleTime: int = 10000):
+		self.simulationSetup = {}
+		self.simulationSetup['oneQubitErrorProb'] = oneQubitErrorProb
+		self.simulationSetup['twoQubitErrorProb'] = twoQubitErrorProb
+		self.simulationSetup['zeroReadoutErrorProb'] = zeroReadoutErrorProb
+		self.simulationSetup['oneReadoutErrorProb'] = oneReadoutErrorProb
+
+		self.simulationSetup['targetAlpha'] = targetAlpha
+		self.simulationSetup['targetBeta'] = targetBeta
+
+		self.simulationSetup['simulationShots'] = simulationShots
+		self.simulationSetup['testSampleTime'] = testSampleTime
 		return
 
 	def getTestConfiguration(self, singleFaultList, twoFaultList, \
 			singleInitialState: np.array = np.array([1, 0]), twoInitialState: array = np.array([1, 0, 0, 0]), simulateConfiguration: bool = True):
 		# simulateConfiguration: True, simulate the configuration and generate test repetition
 		# false: don't simulate and repetition = NaN
+
+		if simulateConfiguration and not self.simulationSetup:
+			raise NotImplementedError("pls call configurationSimulationSetup() first")
 
 		# singleFaultList: a list of singleFault
 		# singleFault: a class object inherit class Fault
