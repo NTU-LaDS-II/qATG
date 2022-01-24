@@ -190,7 +190,7 @@ class qatg():
 		def score(parameters):
 			return vectorDistance(
 				matrixOperation([U3(parameters), originalGateMatrix], faultfreeQuantumState), 
-				matrixOperation(np.concatenate([insertFault2GateList(U2GateSetsTranspile(parameters), faultObject), [faultyGateMatrix]]), faultyQuantumState))
+				matrixOperation(np.concatenate([self.insertFault2GateList(self.U2GateSetsTranspile(parameters), faultObject), [faultyGateMatrix]]), faultyQuantumState))
 
 		results = []
 		for theta in np.linspace(-np.pi, np.pi, num=self.gridSlice, endpoint = True):
@@ -225,10 +225,10 @@ class qatg():
 	def findTwoElement(self, faultObject, faultyQuantumState, faultfreeQuantumState):
 		
 		optimalParameterList = self.twoActivationOptimization(faultyQuantumState, faultfreeQuantumState, faultObject)
-		aboveActivationGate = U2GateSetsTranspile(optimalParameterList[0:3])
-		belowActivationGate = U2GateSetsTranspile(optimalParameterList[3:6])
+		aboveActivationGate = self.U2GateSetsTranspile(optimalParameterList[0:3])
+		belowActivationGate = self.U2GateSetsTranspile(optimalParameterList[3:6])
 		toalActivationGate = [[aboveGate, belowGate] for aboveGate, belowGate in zip(aboveActivationGate, belowActivationGate)]
-		toalActivationGate.append(originalGateMatrix)
+		toalActivationGate.append(faultObject.getOriginalGate())
 		return toalActivationGate
 
 	def twoActivationOptimization(self, faultyQuantumState, faultfreeQuantumState, faultObject):
@@ -281,11 +281,10 @@ class qatg():
 
 		return parameterList
 
-	@staticmethod
-	def U2GateSetsTranspile(UParameters):
+	def U2GateSetsTranspile(self, UParameters):
 		# to gate list directly
 		resultCircuit = self.effectiveUGateCircuit.bind_parameters({self.qiskitParameterTheta: UParameters[0], \
-			self.qiskitParameterPhi: UParameters[1], self.qiskitParameterLambda: UPartParameters[2]})
+			self.qiskitParameterPhi: UParameters[1], self.qiskitParameterLambda: UParameters[2]})
 		return [gate for gate, _, _ in resultCircuit.data] # a list of qGate
 
 	@staticmethod
