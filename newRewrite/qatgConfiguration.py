@@ -1,4 +1,6 @@
 import random
+import numpy as np
+from scipy.stats import chi2, ncx2
 from qiskit import Aer
 from qiskit import execute
 from qiskit.providers.aer.noise import NoiseModel
@@ -30,6 +32,13 @@ class qatgConfiguration():
 		self.faultfreeQuantumCircuit = faultfreeQuantumCircuit
 		self.faultyQuantumCircuit = faultyQuantumCircuit
 
+		self.faultfreeDistribution = []
+		self.faultyDistribution = []
+		self.repetition = 0
+		self.boundary = 0
+		self.simulatedOverkill = 1
+		self.simulatedTestescape = 1
+
 	def getNoiseModel(self):
 		# Depolarizing quantum errors
 		oneQubitError = standard_errors.depolarizing_error(self.oneQubitErrorProb, 1)
@@ -45,36 +54,72 @@ class qatgConfiguration():
 		return noiseModel
 
 	def simulate(self):
-		self.simulatedFaultfreeDistribution = []
-		self.simulatedFaultyDistribution = []
+		self.faultfreeDistribution = []
+		self.faultyDistribution = []
 		self.repetition = 0
-		self.boundary = 0 
+		self.boundary = 0
+		self.simulatedOverkill = 1
+		self.simulatedTestescape = 1
 		
 		simulateJob = execute(self.faultfreeQuantumCircuit, self.backend, noise_model = self.noiseModel, shots = self.simulationShots)
 		counts = simulateJob.result().get_counts()
 		
-		self.simulatedFaultfreeDistribution = [0] * (2 ** self.circuitSize)
+		self.faultfreeDistribution = [0] * (2 ** self.circuitSize)
 		for i in counts:
-			self.simulatedFaultfreeDistribution[int(i, 2)] = counts[i]
-		self.simulatedFaultfreeDistribution = self.simulatedFaultfreeDistribution / np.sum(self.simulatedFaultfreeDistribution)
+			self.faultfreeDistribution[int(i, 2)] = counts[i]
+		self.faultfreeDistribution = np.array(self.faultfreeDistribution / np.sum(self.faultfreeDistribution))
 
 		simulateJob = execute(self.faultyQuantumCircuit, self.backend, noise_model = self.noiseModel, shots = self.simulationShots)
 		counts = simulateJob.result().get_counts()
 
-		self.simulatedFaultyDistribution = [0] * (2 ** self.circuitSize)
+		self.faultyDistribution = [0] * (2 ** self.circuitSize)
 		for i in counts:
-			self.simulatedFaultyDistribution[int(i, 2)] = counts[i]
-		self.simulatedFaultyDistribution = self.simulatedFaultyDistribution / np.sum(self.simulatedFaultyDistribution)
+			self.faultyDistribution[int(i, 2)] = counts[i]
+		self.faultyDistribution = np.array(self.faultyDistribution / np.sum(self.faultyDistribution))
 
-		self.repetition, self.boundary = compute_repetition(faulty_distribution, faultfree_distribution, self.alpha, self.beta)
+		self.repetition, self.boundary = self.calRepetition(self.faultyDistribution, self.faultfreeDistribution, self.targetAlpha, self.targetBeta)
 
-		self.sim_overkill = self.calOverkill(self.simulatedFaultfreeDistribution, self.simulatedFaultyDistribution, fault_index, alpha=self.alpha)
-		self.sim_testescape = self.calTestescape(self.simulatedFaultyDistribution, self.simulatedFaultyDistribution, fault_index, alpha=self.alpha)
+		self.simulatedOverkill = self.calOverkill(self.faultfreeDistribution, self.faultyDistribution, alpha = self.targetAlpha)
+		self.simulatedTestescape = self.calTestescape(self.faultyDistribution, self.faultyDistribution, alpha = self.targetAlpha)
 		
 		return
 
-	def calTestescape(self):
+	@staticmethod
+	def calRepetition(faultyDistribution, faultfreeDistribution, alpha, beta):
+		if faultfreeDistribution.shape != faultyDistribution.shape:
+			raise ValueError('input shape not consistency')
+
+		degreeOfFreedom = faultfreeDistribution.shape[0] - 1
+		effectSize = self.calEffectSize(faultyDistribution, faultfreeDistribution)
+		lowerBoundEffectSize = 0.8 if effectSize > 0.8 else effectSize
+
+		repetition = chi2.ppf(alpha, degreeOfFreedom) / (lowerBoundEffectSize ** 2)
+		while True:
+			nonCentrality = repetition * (effectSize ** 2)
+			chi2Value = chi2.ppf(alpha, degreeOfFreedom)
+			nonChi2Value = ncx2.ppf(1 - beta, degreeOfFreedom, nonCentrality)
+			if nonChi2Value >= chi2Value:
+				break
+			else:
+				repetition += 1
+		
+		boundary = (nonChi2Value * 0.3 + chi2Value * 0.7)
+		if repetition >= INT_MAX or repetition <= 0:
+			return INT_MAX
+		
+		return ceil(repetition), boundary
+
+	def calTestescape(self, faultyDistribution, faultfreeDistribution, alpha):
 		pass
 
-	def calOverkill(self):
+	def calOverkill(self, faultyDistribution, faultfreeDistribution, alpha):
 		pass
+
+	@staticmethod
+	def calEffectSize(faultyQuantumState, faultfreeQuantumState):
+		deltaSquare = np.square(faultyQuantumState - faultfreeQuantumState)
+		effectSize = np.sum(delta_square / (faultyQuantumState + INT_MIN))
+		effectSize = np.sqrt(effectSize)
+		if effectSize < 0.1:
+			effectSize = 0.1
+		return effectSize
