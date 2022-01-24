@@ -19,8 +19,14 @@ class myCNOTFault(qatgFault):
 		sub_circ = QuantumCircuit(sub_q, name='myCNOTFault')
 		sub_circ.u(*sixParameters[0:3], 0)
 		sub_circ.cx(0, 1)
-		sub_circ.u(*sixParameters[0:3], 1)
+		sub_circ.u(*sixParameters[3:6], 1)
 		self.faultyGate = circuit_to_gate(sub_circ)
+
+		# fix this for qiskit
+		self.faultyGate.__array__ = np.kron(U3(*sixParameters[0:3]), np.eye(2))
+		self.faultyGate.__array__ = np.matmul(qGate.CXGate().to_matrix(), self.faultyGate.__array__)
+		self.faultyGate.__array__ = np.matmul(np.kron(np.eye(2), U3(*sixParameters[3:6])), self.faultyGate.__array__)
+
 
 	def getOriginalGateParameters(self):
 		return []
