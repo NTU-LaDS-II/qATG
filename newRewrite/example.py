@@ -1,6 +1,7 @@
 import numpy as np
 import qiskit.circuit.library as qGate
 from qiskit import QuantumRegister, QuantumCircuit
+from qiskit.converters import circuit_to_gate
 
 from qatg import qatg
 from qatgFault import qatgFault
@@ -19,7 +20,7 @@ class myCNOTFault(qatgFault):
 		sub_circ.u(*sixParameters[0:3], 0)
 		sub_circ.cx(0, 1)
 		sub_circ.u(*sixParameters[0:3], 1)
-		self.faultyGate = sub_circ.to_instruction()
+		self.faultyGate = circuit_to_gate(sub_circ)
 
 	def getOriginalGateParameters(self):
 		return []
