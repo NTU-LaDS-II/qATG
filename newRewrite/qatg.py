@@ -177,10 +177,10 @@ class qatg():
 
 	def findSingleElement(self, faultObject, faultyQuantumState, faultfreeQuantumState):
 		# optimize activation gate
-		optimalParameterList = self.singleActivationOptimization(faultyQuantumState, faultfreeQuantumState, faultObject)
+		optimalParameterList, faultyQuantumState, faultfreeQuantumState = self.singleActivationOptimization(faultyQuantumState, faultfreeQuantumState, faultObject)
 		newElement = U2GateSetsTranspile(optimalParameterList) # a list of qGate
 		newElement.append(faultObject.getOriginalGate())
-		return newElement
+		return newElement, faultyQuantumState, faultfreeQuantumState
 
 	def singleActivationOptimization(self, faultyQuantumState, faultfreeQuantumState, faultObject):
 		originalGateParameters = faultObject.getOriginalGateParameters() # list of parameters
@@ -220,16 +220,19 @@ class qatg():
 			for i in range(len(parameterList)):
 				parameterList[i] += newParameterList[i]
 
-		return parameterList
+		faultyQuantumState = matrixOperation(np.concatenate([self.insertFault2GateList(self.U2GateSetsTranspile(parameterList), faultObject), [faultyGateMatrix]]), faultyQuantumState)
+		faultfreeQuantumState = matrixOperation([U3(parameterList), originalGateMatrix], faultfreeQuantumState)
+
+		return parameterList, faultyQuantumState, faultfreeQuantumState
 
 	def findTwoElement(self, faultObject, faultyQuantumState, faultfreeQuantumState):
 		
-		optimalParameterList = self.twoActivationOptimization(faultyQuantumState, faultfreeQuantumState, faultObject)
+		optimalParameterList, faultyQuantumState, faultfreeQuantumState = self.twoActivationOptimization(faultyQuantumState, faultfreeQuantumState, faultObject)
 		aboveActivationGate = self.U2GateSetsTranspile(optimalParameterList[0:3])
 		belowActivationGate = self.U2GateSetsTranspile(optimalParameterList[3:6])
 		toalActivationGate = [[aboveGate, belowGate] for aboveGate, belowGate in zip(aboveActivationGate, belowActivationGate)]
 		toalActivationGate.append(faultObject.getOriginalGate())
-		return toalActivationGate
+		return toalActivationGate, faultyQuantumState, faultfreeQuantumState
 
 	def twoActivationOptimization(self, faultyQuantumState, faultfreeQuantumState, faultObject):
 		# for only CNOT have fault
@@ -279,7 +282,10 @@ class qatg():
 			for i in range(len(parameterList)):
 				parameterList[i] += newParameterList[i]
 
-		return parameterList
+		faultyQuantumState = matrixOperation([np.kron(U3(parameterList[0:3]), U3(parameterList[3:6])), faultyGateMatrix], faultyQuantumState)
+		faultfreeQuantumState = matrixOperation([np.kron(U3(parameterList[0:3]), U3(parameterList[3:6])), originalGateMatrix], faultfreeQuantumState)
+
+		return parameterList, faultyQuantumState, faultfreeQuantumState
 
 	def U2GateSetsTranspile(self, UParameters):
 		# to gate list directly
