@@ -88,6 +88,7 @@ class qatg():
 			if simulateConfiguration:
 				configuration.simulate()
 			configurationList.append(configuration)
+			print(configuration)
 
 		for twoFault in twoFaultList:
 			if not issubclass(type(twoFault), qatgFault):
@@ -101,30 +102,28 @@ class qatg():
 		return configurationList
 
 	def buildSingleConfiguration(self, template, singleFault):
-		length = len(template)
-		qcFaultFree = QuantumCircuit(self.quantumRegister, self.classicalregister)
+		qcFaultFree = QuantumCircuit(self.quantumRegister, self.classicalRegister)
 		qbIndex = singleFault.getQubit()[0]
 		for gate in template:
 			# for qbIndex in range(self.circuitSize):
 			qcFaultFree.append(gate, [qbIndex])
-			qcFaultFree.append(Qgate.Barrier(qbIndex))
-		qcFaultFree.measure(self.quantumRegister, self.classicalregister)
+			qcFaultFree.append(qGate.Barrier(qbIndex))
+		qcFaultFree.measure(self.quantumRegister, self.classicalRegister)
 
-		qcFaulty = QuantumCircuit(self.quantumRegister, self.classicalregister)
+		qcFaulty = QuantumCircuit(self.quantumRegister, self.classicalRegister)
 		faultyGateList = [singleFault.getFaulty(gate.params) if isinstance(gate, singleFault.getGateType()) else gate for gate in template]
 		# add faulty gate to the qbIndex row
 		for gate in faultyGateList:
 			qcFaulty.append(gate, [qbIndex])
-			qcFaulty.append(Qgate.Barrier(qbIndex))
-		qcFaulty.measure(self.quantumRegister, self.classicalregister)
+			qcFaulty.append(qGate.Barrier(qbIndex))
+		qcFaulty.measure(self.quantumRegister, self.classicalRegister)
 
 		return qatgConfiguration(self.circuitSize, self.basisGateSet, self.simulationSetup, \
 			singleFault, qcFaultFree, qcFaulty)
 
 	def buildTwoConfiguration(self, template, twoFault):
-		length = len(template)
-		qcFaultFree = QuantumCircuit(self.quantumRegister, self.classicalregister)
-		qbIndex = singleFault.getQubit()
+		qcFaultFree = QuantumCircuit(self.quantumRegister, self.classicalRegister)
+		qbIndex = twoFault.getQubit()
 		controlQubit = qbIndex[0]
 		targetQubit = qbIndex[1]
 		for activationGatePair in template:
@@ -135,29 +134,27 @@ class qatg():
 			else:
 				qcFaultFree.append(activationGatePair, [controlQubit, targetQubit])
 			
-			qcFaultFree.append(Qgate.Barrier(controlQubit))
-			qcFaultFree.append(Qgate.Barrier(targetQubit))
+			qcFaultFree.append(qGate.Barrier(controlQubit))
+			qcFaultFree.append(qGate.Barrier(targetQubit))
 		
-		qcFaultFree.measure(self.quantumRegister, self.classicalregister)
-		qcFaulty = QuantumCircuit(self.quantumRegister, self.classicalregister)
+		qcFaultFree.measure(self.quantumRegister, self.classicalRegister)
+		qcFaulty = QuantumCircuit(self.quantumRegister, self.classicalRegister)
 		faultyGateList = [activationGatePair if isinstance(activationGatePair, list) else twoFault.getFaulty(activationGatePair.params) for activationGatePair in template]
 		
 		for activationGatePair in faultyGateList:
-			if len(activationGatePair) == 2:
-				qcfaulty.append(activationGatePair[0], [controlQubit])
-				qcfaulty.append(activationGatePair[1], [targetQubit])
+			if isinstance(activationGatePair, list):
+				qcFaulty.append(activationGatePair[0], [controlQubit])
+				qcFaulty.append(activationGatePair[1], [targetQubit])
 				
 			else:
-				qcFaulty.append(activationGatePair[0], [controlQubit])
-				qcfaulty.append(activationGatePair[1], [controlQubit, targetQubit])
-				qcFaulty.append(activationGatePair[2], [targetQubit])
+				qcFaulty.append(activationGatePair, [controlQubit, targetQubit])
 
-			qcfaulty.append(Qgate.Barrier(controlQubit))
-			qcfaulty.append(Qgate.Barrier(targetQubit))
-		qcfaulty.measure(self.quantumRegister, self.classicalregister)
+			qcFaulty.append(qGate.Barrier(controlQubit))
+			qcFaulty.append(qGate.Barrier(targetQubit))
+		qcFaulty.measure(self.quantumRegister, self.classicalRegister)
 	
 		return qatgConfiguration(self.circuitSize, self.basisGateSet, self.simulationSetup, \
-			singleFault, qcFaultFree, qcFaulty)
+			twoFault, qcFaultFree, qcFaulty)
 
 	def generateTestTemplate(self, faultObject, initialState, findActivationGate):
 		templateGateList = [] # list of qGate
@@ -167,20 +164,19 @@ class qatg():
 
 		for element in range(self.maxTestTemplateSize):
 			newElement, faultyQuantumState, faultfreeQuantumState = findActivationGate(faultObject = faultObject, faultyQuantumState = faultyQuantumState, faultfreeQuantumState = faultfreeQuantumState)
-			# newElement: list[np.array(gate)]
-			templateGateList.append(newElement)
+			templateGateList += newElement
 			effectSize = calEffectSize(faultyQuantumState, faultfreeQuantumState)
-			if effectsize > self.minRequiredEffectSize:
+			if effectSize > self.minRequiredEffectSize:
 				break
 
 		return templateGateList
 
 	def findSingleElement(self, faultObject, faultyQuantumState, faultfreeQuantumState):
 		# optimize activation gate
-		optimalParameterList = self.singleActivationOptimization(faultyQuantumState, faultfreeQuantumState, faultObject)
+		optimalParameterList, faultyQuantumState, faultfreeQuantumState = self.singleActivationOptimization(faultyQuantumState, faultfreeQuantumState, faultObject)
 		newElement = U2GateSetsTranspile(optimalParameterList) # a list of qGate
 		newElement.append(faultObject.getOriginalGate())
-		return newElement
+		return newElement, faultyQuantumState, faultfreeQuantumState
 
 	def singleActivationOptimization(self, faultyQuantumState, faultfreeQuantumState, faultObject):
 		originalGateParameters = faultObject.getOriginalGateParameters() # list of parameters
@@ -220,22 +216,25 @@ class qatg():
 			for i in range(len(parameterList)):
 				parameterList[i] += newParameterList[i]
 
-		return parameterList
+		faultyQuantumState = matrixOperation(np.concatenate([self.insertFault2GateList(self.U2GateSetsTranspile(parameterList), faultObject), [faultyGateMatrix]]), faultyQuantumState)
+		faultfreeQuantumState = matrixOperation([U3(parameterList), originalGateMatrix], faultfreeQuantumState)
+
+		return parameterList, faultyQuantumState, faultfreeQuantumState
 
 	def findTwoElement(self, faultObject, faultyQuantumState, faultfreeQuantumState):
 		
-		optimalParameterList = self.twoActivationOptimization(faultyQuantumState, faultfreeQuantumState, faultObject)
+		optimalParameterList, faultyQuantumState, faultfreeQuantumState = self.twoActivationOptimization(faultyQuantumState, faultfreeQuantumState, faultObject)
 		aboveActivationGate = self.U2GateSetsTranspile(optimalParameterList[0:3])
 		belowActivationGate = self.U2GateSetsTranspile(optimalParameterList[3:6])
 		toalActivationGate = [[aboveGate, belowGate] for aboveGate, belowGate in zip(aboveActivationGate, belowActivationGate)]
 		toalActivationGate.append(faultObject.getOriginalGate())
-		return toalActivationGate
+		return toalActivationGate, faultyQuantumState, faultfreeQuantumState
 
 	def twoActivationOptimization(self, faultyQuantumState, faultfreeQuantumState, faultObject):
 		# for only CNOT have fault
 		originalGateParameters = faultObject.getOriginalGateParameters()
 		originalGateMatrix = faultObject.getOriginalGate().to_matrix()
-		faultyGateMatrix = faultObject.getFaultyGate(originalGateParameters).to_matrix()
+		faultyGateMatrix = faultObject.getFaulty(originalGateParameters).to_matrix()
 		
 		def score(parameters):
 			return vectorDistance(
@@ -279,7 +278,11 @@ class qatg():
 			for i in range(len(parameterList)):
 				parameterList[i] += newParameterList[i]
 
-		return parameterList
+		print("score: ", score(parameterList))
+		faultyQuantumState = matrixOperation([np.kron(U3(parameterList[0:3]), U3(parameterList[3:6])), faultyGateMatrix], faultyQuantumState)
+		faultfreeQuantumState = matrixOperation([np.kron(U3(parameterList[0:3]), U3(parameterList[3:6])), originalGateMatrix], faultfreeQuantumState)
+
+		return parameterList, faultyQuantumState, faultfreeQuantumState
 
 	def U2GateSetsTranspile(self, UParameters):
 		# to gate list directly

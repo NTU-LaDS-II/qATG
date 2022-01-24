@@ -33,18 +33,19 @@ class myCNOTFault(qatgFault):
 	def getOriginalGateParameters(self):
 		return []
 
-	def getFaultyGate(self, parameters):
+	def getFaulty(self, parameters):
 		if len(parameters) != 0:
 			raise ValueError("No parameters for CNOT!")
 		return self.faultyGate
 
-couplingMap = [[0, 1], [1, 0], [1, 2], [1, 3], [2, 1], [3, 1], [3, 4], [4, 3]]
+# couplingMap = [[0, 1], [1, 0], [1, 2], [1, 3], [2, 1], [3, 1], [3, 4], [4, 3]]
+couplingMap = [[0, 1]]
 twoFaultList = [myCNOTFault(coupling, [0.05] * 6) for coupling in couplingMap]
 
 		
-generator = qatg(circuitSize = 5, basisGateSet = [qGate.RZGate, qGate.RXGate])
+generator = qatg(circuitSize = 5, basisGateSet = [qGate.UGate])
 generator.configurationSimulationSetup()
 configurationList = generator.getTestConfiguration(singleFaultList, twoFaultList)
 
-for configuration in configurationList:
-	print(configuration)
+# for configuration in configurationList:
+# 	print(configuration)

@@ -27,10 +27,15 @@ class qatgFault(abc.ABC):
 	def getOriginalGateParameters(self):
 		return NotImplemented
 
-	def getOriginalGate(self):
+	def getOriginal(self):
 		return self.gateType(*self.getOriginalGateParameters())
 
+	def getOriginalGate(self):
+		return self.getOriginal()
+
 	@abc.abstractmethod
-	def getFaultyGate(self, parameters):
-		# for CNOT [f1, CNOT, f2]
+	def getFaulty(self, parameters):
 		return NotImplemented
+
+	def getFaultyGate(self):
+		return self.getFaulty()
