@@ -97,18 +97,24 @@ class qatg():
 
 	def buildSingleConfiguration(self, template, singleFault):
 		length = len(template)
-		qcList = []
 		qcFaultFree = QuantumCircuit(self.quantumRegister, self.classicalregister)
 		for gate in template:
 			for qbIndex in range(self.circuitSize):
 				qcFaultFree.append(gate, [qbIndex])
 				qcFaultFree.append(Qgate.Barrier(qbIndex))
 
-		# for qbIndex in range(self.circuitSize):
-		# 	Qc = QuantumCircuit(self.quantumRegister, self.classicalregister)
-		# 	for gate in template:
-		# 		Qc.append(gate, [qbIndex])
-		# 		Qc.append(Qgate.Barrier(qbIndex))
+		qcFaulty = deepcopy(qcFaultFree)
+		qbIndex = (singleFault.getQubit())[0]
+		# remove the qgate of the qbIndex row
+		for i in range(2*length):
+			qcFaulty._data.pop(qbIndex)
+
+		faultyGateList = [singleFault.getFaulty(gate.params) if isinstance(gate, singleFault.getGateType()) else gate for gate in template]
+		# add faulty gate to the qbIndex row
+		for gate in faultyGateList:
+			qcFaulty.append(gate, [qbIndex])
+			qcFaulty.append(Qgate.Barrier(qbIndex))
+		
 	def getTestTemplate(self, faultObject, initialState, findActivationGate):
 		templateGateList = [] # list of qGate
 
