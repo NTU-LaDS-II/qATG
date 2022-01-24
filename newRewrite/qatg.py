@@ -9,28 +9,17 @@ import qiskit.circuit.library as qGate
 from qatgFault import qatgFault
 
 class qatg():
-	def __init__(self, circuitSize: int = None, qubitIds: list[int] = None, basisGateSet: list[qGate], couplingMap: list[list], \
+	def __init__(self, circuitSize: int = None, basisGateSet: list[qGate], couplingMap: list[list], \
 			quantumRegisterName: str = 'q', classicalRegisterName: str = 'c', \
 			targetAlpha: float = 0.99, targetBeta: float = 0.999, \
 			gridSlice: int = 21, \
 			gradientDescentSearchTime: int = 800, gradientDescentStep: float = 0.01, \
 			maxTestTemplateSize: int = 50, minRequiredEffectSize: float = 3, \
 			testSampleTime: int = 10000):
-		if not circuitSize and not qubitIds:
-			raise ValueError('unknown circuitSize and qubitIds')
-
-		if qubitIds:
-			# monkey
-			if circuitSize:
-				if len(qubitIds) != circuitSize:
-					raise ValueError('unmatched circuitSize and qubitIds size')
-			self.qubitIds = qubitIds
-		elif circuitSize:
-			if not isinstance(circuitSize, int):
-				raise TypeError('circuitSize must be int')
-			if circuitSize <= 0:
-				raise ValueError('circuitSize must be positive')
-			self.qubitIds = range(circuitSize)
+		if not isinstance(circuitSize, int):
+			raise TypeError('circuitSize must be int')
+		if circuitSize <= 0:
+			raise ValueError('circuitSize must be positive')
 		
 		# list[qGate]
 		self.basisGateSet = basisGateSet
@@ -77,7 +66,7 @@ class qatg():
 		for singleFault in singleFaultList:
 			if not issubclass(singleFault, qatgFault):
 				raise TypeError(f"{singleFault} should be subclass of qatgFault")
-			for qubit in self.qubitIds:
+			for qubit in range(self.circuitSize):
 				template = self.generateTestTemplate(faultObject = singleFault, target = qubit, initialState = singleInitialState, findActivationGate = singleActivationGate)
 				
 
@@ -92,8 +81,8 @@ class qatg():
 	def getTestTemplate(self, faultObject, target, initialState, findActivationGate):
 		templateGateList = [] # list of qGate
 
-		faultyQuantumState = deepcopy(intialState)
-		faultfreeQuantumState = deepcopy(intialState)
+		faultyQuantumState = deepcopy(initialState)
+		faultfreeQuantumState = deepcopy(initialState)
 
 		for element in range(self.maxTestTemplateSize):
 			newElement, faultyQuantumState, faultfreeQuantumState = findActivationGate(faultObject = faultObject, target = target, faultyQuantumState = faultyQuantumState, faultfreeQuantumState = faultfreeQuantumState)
