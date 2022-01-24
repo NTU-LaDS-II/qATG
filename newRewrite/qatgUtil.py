@@ -20,13 +20,19 @@ def CNOT():
 					  [0,0,1,0],
 					  [0,1,0,0]])
 
-def matrixOperation(matrixList, quantumState=[]):
+def matrixOperationForOneQubit(matrixList, quantumState=[]):
 	matrixList = [np.array(matrix) for matrix in matrixList]
 	quantumState = np.array(quantumState)
 	for matrix in matrixList:
 		quantumState = np.dot(matrix, quantumState)
 	return quantumState
 
+def matrixOperationForTwoQubit(matrixList, quantumState=[]):
+	kronProductOfActivationGate = np.kron(matrixList[0], matrixList[1])
+	quantumState = np.dot(matrixList[2], quantumState)
+	quantumState = np.dot(kronProductOfActivationGate, quantumState)
+	return quantumState
+	
 def vectorDistance(vector1, vector2):
 	return np.sum(np.square(np.abs(np.subtract(toProbability(vector1), toProbability(vector2)))))
 
