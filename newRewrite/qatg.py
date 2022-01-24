@@ -102,9 +102,10 @@ class qatg():
 			for qbIndex in range(self.circuitSize):
 				qcFaultFree.append(gate, [qbIndex])
 				qcFaultFree.append(Qgate.Barrier(qbIndex))
+		qcFaultFree.measure(self.quantumRegister, self.classicalregister)
 
 		qcFaulty = deepcopy(qcFaultFree)
-		qbIndex = (singleFault.getQubit())[0]
+		qbIndex = singleFault.getQubit()[0]
 		# remove the qgate of the qbIndex row
 		for i in range(2*length):
 			qcFaulty._data.pop(qbIndex)
@@ -114,6 +115,7 @@ class qatg():
 		for gate in faultyGateList:
 			qcFaulty.append(gate, [qbIndex])
 			qcFaulty.append(Qgate.Barrier(qbIndex))
+		qcFaulty.measure(self.quantumRegister, self.classicalregister)
 		
 	def getTestTemplate(self, faultObject, initialState, findActivationGate):
 		templateGateList = [] # list of qGate
