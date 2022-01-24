@@ -6,6 +6,8 @@ from qiskit import transpile, QuantumRegister, ClassicalRegister, QuantumCircuit
 from qiskit.circuit import Parameter
 import qiskit.circuit.library as qGate
 
+from qatgFault import qatgFault
+
 class qatg():
 	def __init__(self, circuitSize: int = None, qubitIds: list[int] = None, basisGateSet: list[qGate], couplingMap: list[list], \
 			quantumRegisterName: str = 'q', classicalRegisterName: str = 'c', \
@@ -30,10 +32,7 @@ class qatg():
 				raise ValueError('circuitSize must be positive')
 			self.qubitIds = range(circuitSize)
 		
-		# list[qGate], list['str' with available gates]
-		# np.array[qGate], np.array['str' with available gates]
-		# list[self def gates], np.array[self def gates]
-		# self def gates must be 2x2, ...
+		# list[qGate]
 		self.basisGateSet = basisGateSet
 		self.couplingMap = couplingMap
 		self.quantumRegisterName = quantumRegisterName
@@ -76,26 +75,29 @@ class qatg():
 		configurationList = []
 
 		for singleFault in singleFaultList:
+			if not issubclass(singleFault, qatgFault):
+				raise TypeError(f"{singleFault} should be subclass of qatgFault")
 			for qubit in self.qubitIds:
 				template = self.generateTestTemplate(faultObject = singleFault, target = qubit, initialState = singleInitialState, findActivationGate = singleActivationGate)
-		
+				
+
 		for twoFault in twoFaultList:
+			if not issubclass(singleFault, qatgFault):
+				raise TypeError(f"{twoFault} should be subclass of qatgFault")
 			for couple in couplingMap:
 				template = self.generateTestTemplate(faultObject = twoFault, target = couple, initialState = twoInitialState, findActivationGate = twoActivationGate)
 
 		pass
 
 	def getTestTemplate(self, faultObject, target, initialState, findActivationGate):
-		templateGateList = []
+		templateGateList = [] # list of qGate
 
 		faultyQuantumState = deepcopy(intialState)
 		faultfreeQuantumState = deepcopy(intialState)
 
-		# originalGateParameters = faultObject.getOriginalGateParameters(target)
-		# faultyGate = faultObject.getFaulty(originalGateParameters, target)
-
 		for element in range(self.maxTestTemplateSize):
 			newElement, faultyQuantumState, faultfreeQuantumState = findActivationGate(faultObject = faultObject, target = target, faultyQuantumState = faultyQuantumState, faultfreeQuantumState = faultfreeQuantumState)
+			# newElement: list[np.array(gate)]
 			templateGateList = np.concatenate([templateGateList, newElement])
 			effectSize = calEffectSize(faultyQuantumState, faultfreeQuantumState)
 			if effectsize > self.minRequiredEffectSize:
@@ -106,11 +108,36 @@ class qatg():
 		return templateGateList
 
 	def singleActivationGate(self, faultObject, target, faultyQuantumState, faultfreeQuantumState):
-		pass
+		newElement = [] # list of qGate
+
+		# optimize activation gate
+		originalGateParameters = faultObject.getOriginalGateParameters(target) # list of parameters
+		originalGateMatrix = faultObject.getOriginalGate(target).to_matrix()
+		faultyGateMatrix = faultObject.getFaulty(originalGateParameters, target).to_matrix() # np.array(gate)
+		# TODO
+		# grid search
+		# remember to compare gate.type and faultObject.getGateType()
+		# gate.to_matrix() -> 2x2
+		# gate.params -> list[Parameter]
+		# gradient descent
+		# U to gateSet
+
+		# faultObject.getOriginalGate(target): np.array(gate)
+		newElement.append(faultObject.getOriginalGate(target))
+		return newElement
 
 	def twoActivationGate(self, faultObject, target, faultyQuantumState, faultfreeQuantumState):
+		# TODO
 		pass
 
 	@staticmethod
 	def calEffectSize(faultyQuantumState, faultfreeQuantumState):
+		# TODO
 		pass
+
+	@staticmethod
+	def U2GateSetsTranspile(UParameters):
+		# to gate list directly
+		resultCircuit = self.effectiveUGateCircuit.bind_parameters({self.qiskitParameterTheta: UParameters[0], \
+			self.qiskitParameterPhi: UParameters[1], self.qiskitParameterLambda: UPartParameters[2]})
+		return [gate for gate, _, _ in resultCircuit.data] # a list of qGate
