@@ -59,34 +59,32 @@ class qatg():
 		# singleFaultList: a list of singleFault
 		# singleFault: a class object inherit class Fault
 		# gateType: faultObject.getGateType()
-		# original gate parameters: faultObject.getOriginalGateParameters(target)
-		# faulty: faultObject.getFaulty(faultfreeParameters, target)
+		# original gate parameters: faultObject.getOriginalGateParameters()
+		# faulty: faultObject.getFaulty(faultfreeParameters)
 
 		configurationList = []
 
 		for singleFault in singleFaultList:
 			if not issubclass(singleFault, qatgFault):
 				raise TypeError(f"{singleFault} should be subclass of qatgFault")
-			for qubit in range(self.circuitSize):
-				template = self.generateTestTemplate(faultObject = singleFault, target = qubit, initialState = singleInitialState, findActivationGate = findSingleElement)
+			template = self.generateTestTemplate(faultObject = singleFault, initialState = singleInitialState, findActivationGate = findSingleElement)
 				
 
 		for twoFault in twoFaultList:
 			if not issubclass(singleFault, qatgFault):
 				raise TypeError(f"{twoFault} should be subclass of qatgFault")
-			for couple in couplingMap:
-				template = self.generateTestTemplate(faultObject = twoFault, target = couple, initialState = twoInitialState, findActivationGate = findTwoElement)
+			template = self.generateTestTemplate(faultObject = twoFault, initialState = twoInitialState, findActivationGate = findTwoElement)
 
 		pass
 
-	def getTestTemplate(self, faultObject, target, initialState, findActivationGate):
+	def getTestTemplate(self, faultObject, initialState, findActivationGate):
 		templateGateList = [] # list of qGate
 
 		faultyQuantumState = deepcopy(initialState)
 		faultfreeQuantumState = deepcopy(initialState)
 
 		for element in range(self.maxTestTemplateSize):
-			newElement, faultyQuantumState, faultfreeQuantumState = findActivationGate(faultObject = faultObject, target = target, faultyQuantumState = faultyQuantumState, faultfreeQuantumState = faultfreeQuantumState)
+			newElement, faultyQuantumState, faultfreeQuantumState = findActivationGate(faultObject = faultObject, faultyQuantumState = faultyQuantumState, faultfreeQuantumState = faultfreeQuantumState)
 			# newElement: list[np.array(gate)]
 			templateGateList = np.concatenate([templateGateList, newElement])
 			effectSize = calEffectSize(faultyQuantumState, faultfreeQuantumState)
@@ -97,14 +95,14 @@ class qatg():
 
 		return templateGateList
 
-	def findSingleElement(self, faultObject, target, faultyQuantumState, faultfreeQuantumState):
+	def findSingleElement(self, faultObject, faultyQuantumState, faultfreeQuantumState):
 		
 		newElement = [] # list of qGate
 
 		# optimize activation gate
-		originalGateParameters = faultObject.getOriginalGateParameters(target) # list of parameters
-		originalGateMatrix = faultObject.getOriginalGate(target).to_matrix()
-		faultyGateMatrix = faultObject.getFaulty(originalGateParameters, target).to_matrix() # np.array(gate)
+		originalGateParameters = faultObject.getOriginalGateParameters() # list of parameters
+		originalGateMatrix = faultObject.getOriginalGate().to_matrix()
+		faultyGateMatrix = faultObject.getFaulty(originalGateParameters).to_matrix() # np.array(gate)
 		# TODO
 		# grid search
 		# remember to compare gate.type and faultObject.getGateType()
@@ -115,14 +113,14 @@ class qatg():
 		optimalParameterList = self.singleGridSearch(faultyGateMatrix , originalGateMatrix , faultyQuantumState , faultfreeQuantumState , faultObject)
 		# optimalParameterList = self.singleGradientDescent(optimalParameterList, faultyGateMatrix , originalGateMatrix , faultyQuantumState , faultfreeQuantumState , faultObject)
 		newElement.append(U2GateSetsTranspile(optimalParameterList))
-		newElement.append(faultObject.getOriginalGate(target))
+		newElement.append(faultObject.getOriginalGate())
 		return newElement
 
 	def singleGridSearch(self, faultyGateMatrix, originalGateMatrix, faultyQuantumState, faultfreeQuantumState):
 		def score(parameters):
 			return vectorDistance(
 				matrixOperation([U3(parameters), originalGateMatrix], faultfreeQuantumState), 
-				matrixOperation(np.concatenate([insertFault2GateList(U2GateSetsTranspile(parameters), faultObject, target), [faultyGateMatrix]]), faultyQuantumState))
+				matrixOperation(np.concatenate([insertFault2GateList(U2GateSetsTranspile(parameters), faultObject), [faultyGateMatrix]]), faultyQuantumState))
 		results = []
 		for theta in np.linspace(-np.pi, np.pi, num=self.gridSlice, endpoint = True):
 			for phi in np.linspace(-np.pi, np.pi, num=self.gridSlice, endpoint = True):
@@ -130,13 +128,13 @@ class qatg():
 					results.append([[theta, phi, lam], score([theta, phi, lam])])
 		return max(results, key = lambda x: x[1])[0]
 
-	def findTwoElement(self, faultObject, target, faultyQuantumState, faultfreeQuantumState):
+	def findTwoElement(self, faultObject, faultyQuantumState, faultfreeQuantumState):
 		# TODO
 		newElement = [] # list of list of 2 qGate
 
-		originalGateParameters = faultObject.getOriginalGateParameters(target) # list of 6 parameters
-		originalGateMatrix = faultObject.getOriginalGate(target).to_matrix()
-		faultyGateMatrix = faultObject.getFaultyGate(originalGateParameters, target).to_matrix() # np.array(gate)
+		originalGateParameters = faultObject.getOriginalGateParameters() # list of 6 parameters
+		originalGateMatrix = faultObject.getOriginalGate().to_matrix()
+		faultyGateMatrix = faultObject.getFaultyGate(originalGateParameters).to_matrix() # np.array(gate)
 		
 		optimalParameterList = self.twoGridSearch(faultyGateMatrix , originalGateMatrix , faultyQuantumState , faultfreeQuantumState , faultObject)
 		# optimalParameterList = self.twoGradientDescent(optimalParameterList, faultyGateMatrix , originalGateMatrix , faultyQuantumState , faultfreeQuantumState , faultObject)
@@ -202,11 +200,10 @@ class qatg():
 		print("score: ", score(parameterList))
 		return parameterList
 	def singleGradientDescent(self, parameterList, faultyGateMatrix, originalGateMatrix, faultyQuantumState, faultfreeQuantumState, fault):
-		# parameterList = [0 , 0 , 0] 應該根據gate型態給予參數
 		def score(parameters):
 			return vectorDistance(
 				matrixOperation([U3(parameters), originalGateMatrix], faultfreeQuantumState), 
-				matrixOperation(np.concatenate([insertFault2GateList(U2GateSetsTranspile(parameters), faultObject, target), [faultyGateMatrix]]), faultyQuantumState))
+				matrixOperation(np.concatenate([insertFault2GateList(U2GateSetsTranspile(parameters), faultObject), [faultyGateMatrix]]), faultyQuantumState))
 		# print("score: ", score)
 
 		for j in range(self.search_time):
@@ -252,6 +249,6 @@ class qatg():
 		return [gate for gate, _, _ in resultCircuit.data] # a list of qGate
 
 	@staticmethod
-	def insertFault2GateList(gateList, faultObject, target):
-		return [faultObject.getFaulty(gate.params, target).to_matrix() if isinstance(gate, faultObject.getGateType()) else gate.to_matrix() for gate in gateList]
+	def insertFault2GateList(gateList, faultObject):
+		return [faultObject.getFaulty(gate.params).to_matrix() if isinstance(gate, faultObject.getGateType()) else gate.to_matrix() for gate in gateList]
 		
