@@ -9,6 +9,8 @@ import qiskit.circuit.library as qGate
 from qatgFault import qatgFault
 from qatgUtil import U3, CNOT
 
+INT_MIN = 1E-100
+
 class qatg():
 	def __init__(self, circuitSize: int = None, basisGateSet: list[qGate], couplingMap: list[list], \
 			quantumRegisterName: str = 'q', classicalRegisterName: str = 'c', \
@@ -86,64 +88,73 @@ class qatg():
 		for element in range(self.maxTestTemplateSize):
 			newElement, faultyQuantumState, faultfreeQuantumState = findActivationGate(faultObject = faultObject, faultyQuantumState = faultyQuantumState, faultfreeQuantumState = faultfreeQuantumState)
 			# newElement: list[np.array(gate)]
-			templateGateList = np.concatenate([templateGateList, newElement])
+			templateGateList.append(newElement)
 			effectSize = calEffectSize(faultyQuantumState, faultfreeQuantumState)
 			if effectsize > self.minRequiredEffectSize:
-				break	
-
-		# print?
+				break
 
 		return templateGateList
 
 	def findSingleElement(self, faultObject, faultyQuantumState, faultfreeQuantumState):
-		
-		newElement = [] # list of qGate
-
 		# optimize activation gate
-		originalGateParameters = faultObject.getOriginalGateParameters() # list of parameters
-		originalGateMatrix = faultObject.getOriginalGate().to_matrix()
-		faultyGateMatrix = faultObject.getFaulty(originalGateParameters).to_matrix() # np.array(gate)
-		# TODO
-		# grid search
-		# remember to compare gate.type and faultObject.getGateType()
-		# gate.to_matrix() -> 2x2
-		# gate.params -> list[Parameter]
-		# gradient descent
-		# U to gateSet
-		optimalParameterList = self.singleGridSearch(faultyGateMatrix , originalGateMatrix , faultyQuantumState , faultfreeQuantumState , faultObject)
-		# optimalParameterList = self.singleGradientDescent(optimalParameterList, faultyGateMatrix , originalGateMatrix , faultyQuantumState , faultfreeQuantumState , faultObject)
-		newElement.append(U2GateSetsTranspile(optimalParameterList))
+		optimalParameterList = self.singleActivationOptimization(faultyQuantumState, faultfreeQuantumState, faultObject)
+		newElement = U2GateSetsTranspile(optimalParameterList) # a list of qGate
 		newElement.append(faultObject.getOriginalGate())
 		return newElement
 
-	def singleGridSearch(self, faultyGateMatrix, originalGateMatrix, faultyQuantumState, faultfreeQuantumState):
+	def singleActivationOptimization(self, faultyQuantumState, faultfreeQuantumState, faultObject):
+		originalGateParameters = faultObject.getOriginalGateParameters() # list of parameters
+		originalGateMatrix = faultObject.getOriginalGate().to_matrix()
+		faultyGateMatrix = faultObject.getFaulty(originalGateParameters).to_matrix() # np.array(gate)
+
 		def score(parameters):
 			return vectorDistance(
 				matrixOperation([U3(parameters), originalGateMatrix], faultfreeQuantumState), 
 				matrixOperation(np.concatenate([insertFault2GateList(U2GateSetsTranspile(parameters), faultObject), [faultyGateMatrix]]), faultyQuantumState))
+
 		results = []
 		for theta in np.linspace(-np.pi, np.pi, num=self.gridSlice, endpoint = True):
 			for phi in np.linspace(-np.pi, np.pi, num=self.gridSlice, endpoint = True):
 				for lam in np.linspace(-np.pi, np.pi, num=self.gridSlice, endpoint = True):
 					results.append([[theta, phi, lam], score([theta, phi, lam])])
-		return max(results, key = lambda x: x[1])[0]
+		parameterList = max(results, key = lambda x: x[1])[0]
+
+		for time in range(self.gradientDescentSearchTime):
+			newParameterList = [0]*len(parameterList)
+			for i in range(len(parameterList)):
+				currentScore = score(parameterList)
+				parameterList[i] += self.gradientDescentStep
+				upScore = score(parameterList)
+				parameterList[i] -= 2*self.gradientDescentStep
+				downScore = score(parameterList)
+				parameterList[i] += self.gradientDescentStep
+
+				if(upScore > currentScore and upScore >= downScore):
+					newParameterList[i] += self.gradientDescentStep
+				elif(downScore > currentScore and downScore >= upScore):
+					newParameterList[i] -= self.gradientDescentStep
+				elif upScore == currentScore == downScore:
+					newParameterList[i] += self.gradientDescentStep
+			if newParameterList == [0, 0, 0]:
+				break
+			for i in range(len(parameterList)):
+				parameterList[i] += newParameterList[i]
+
+		return parameterList
 
 	def findTwoElement(self, faultObject, faultyQuantumState, faultfreeQuantumState):
-		# TODO
-		newElement = [] # list of list of 2 qGate
-
-		originalGateParameters = faultObject.getOriginalGateParameters() # list of 6 parameters
+		originalGateParameters = faultObject.getOriginalGateParameters()
 		originalGateMatrix = faultObject.getOriginalGate().to_matrix()
 		faultyGateMatrix = faultObject.getFaultyGate(originalGateParameters).to_matrix() # np.array(gate)
 		
-		optimalParameterList = self.twoGridSearch(faultyGateMatrix , originalGateMatrix , faultyQuantumState , faultfreeQuantumState , faultObject)
-		# optimalParameterList = self.twoGradientDescent(optimalParameterList, faultyGateMatrix , originalGateMatrix , faultyQuantumState , faultfreeQuantumState , faultObject)
+		optimalParameterList = self.twoActivationOptimization(faultyQuantumState, faultfreeQuantumState, faultObject)
 		aboveActivationGate = U2GateSetsTranspile(optimalParameterList[0:3])
 		belowActivationGate = U2GateSetsTranspile(optimalParameterList[3:6])
 		toalActivationGate = [[aboveGate, belowGate] for aboveGate, belowGate in zip(aboveActivationGate, belowActivationGate)]
-		return toalActivationGate + [originalGateMatrix]
+		toalActivationGate.append(originalGateMatrix)
+		return toalActivationGate
 
-	def twoGridSearch(self, faultyGateMatrix, originalGateMatrix, faultyQuantumState, faultfreeQuantumState):
+	def twoActivationOptimization(self, faultyQuantumState, faultfreeQuantumState, faultObject):
 		# for only CNOT have fault
 		def score(parameters):
 			return vectorDistance(
@@ -152,94 +163,52 @@ class qatg():
 
 		# 3+3 method
 		results = []
-		for theta in np.linspace(-np.pi, np.pi, num=self.grid_slice, endpoint = True):
-			for phi in np.linspace(-np.pi, np.pi, num=self.grid_slice, endpoint = True):
-				for lam in np.linspace(-np.pi, np.pi, num=self.grid_slice, endpoint = True):
+		for theta in np.linspace(-np.pi, np.pi, num=self.gridSlice, endpoint = True):
+			for phi in np.linspace(-np.pi, np.pi, num=self.gridSlice, endpoint = True):
+				for lam in np.linspace(-np.pi, np.pi, num=self.gridSlice, endpoint = True):
 					results.append([[theta, phi, lam], score([theta, phi, lam, 0, 0, 0])])
 		first_three = max(results, key = lambda x: x[1])[0]
 
 		results = []
-		for theta in np.linspace(-np.pi, np.pi, num=self.grid_slice, endpoint = True):
-			for phi in np.linspace(-np.pi, np.pi, num=self.grid_slice, endpoint = True):
-				for lam in np.linspace(-np.pi, np.pi, num=self.grid_slice, endpoint = True):
+		for theta in np.linspace(-np.pi, np.pi, num=self.gridSlice, endpoint = True):
+			for phi in np.linspace(-np.pi, np.pi, num=self.gridSlice, endpoint = True):
+				for lam in np.linspace(-np.pi, np.pi, num=self.gridSlice, endpoint = True):
 					results.append([[theta, phi, lam], score(first_three + [theta, phi, lam])])
 		next_three = max(results, key = lambda x: x[1])[0]
 	
-		return first_three + next_three
-	
-	def twoGradientDescent(self, parameterList, faultyGateMatrix, originalGateMatrix, faultyQuantumState, faultfreeQuantumState):
-		# parameterList = [0, 0, 0, 0, 0, 0]
-		def score(parameters):
-			return vectorDistance(
-				matrixOperation([[U3(parameters[0:3]), U3(parameters[3:6])], originalGateMatrix], faultfreeQuantumState), 
-				matrixOperation([[U3(parameters[0:3]), U3(parameters[3:6])], faultyGateMatrix], faultyQuantumState))
+		parameterList = np.concatenate([first_three, next_three])
 
-		for j in range(self.search_time):
+		for time in range(self.gradientDescentSearchTime):
 			newParameterList = [0]*len(parameterList)
 			for i in range(len(parameterList)):
 				currentScore = score(parameterList)
-				parameterList[i] += self.step
+				parameterList[i] += self.gradientDescentStep
 				upScore = score(parameterList)
-				parameterList[i] -= 2*self.step
+				parameterList[i] -= 2*self.gradientDescentStep
 				downScore = score(parameterList)
-				parameterList[i] += self.step
+				parameterList[i] += self.gradientDescentStep
 
 				if(upScore > currentScore and upScore >= downScore):
-					newParameterList[i] += self.step
-					# newParameterList[i] += self.step*(upScore - currentScore)
+					newParameterList[i] += self.gradientDescentStep
 				elif(downScore > currentScore and downScore >= upScore):
-					newParameterList[i] -= self.step
-					# newParameterList[i] -= self.step*(downScore - currentScore)
+					newParameterList[i] -= self.gradientDescentStep
 				elif upScore == currentScore == downScore:
-					newParameterList[i] += self.step
+					newParameterList[i] += self.gradientDescentStep
 			if newParameterList == [0, 0, 0, 0, 0, 0]:
 				break
 			for i in range(len(parameterList)):
 				parameterList[i] += newParameterList[i]
 
-		print("score: ", score(parameterList))
 		return parameterList
-	def singleGradientDescent(self, parameterList, faultyGateMatrix, originalGateMatrix, faultyQuantumState, faultfreeQuantumState, fault):
-		def score(parameters):
-			return vectorDistance(
-				matrixOperation([U3(parameters), originalGateMatrix], faultfreeQuantumState), 
-				matrixOperation(np.concatenate([insertFault2GateList(U2GateSetsTranspile(parameters), faultObject), [faultyGateMatrix]]), faultyQuantumState))
-		# print("score: ", score)
 
-		for j in range(self.search_time):
-			newParameterList = [0]*len(parameterList)
-			for i in range(len(parameterList)):
-				currentScore = score(parameterList)
-				parameterList[i] += self.step
-				upScore = score(parameterList)
-				parameterList[i] -= 2*self.step
-				downScore = score(parameterList)
-				parameterList[i] += self.step
-
-				if(upScore > currentScore and upScore >= downScore):
-					# for gradient descent only
-					newParameterList[i] += self.step
-					# for grid search
-					# newParameterList[i] += self.step*(upScore - currentScore)
-				elif(downScore > currentScore and downScore >= upScore):
-					# for gradient descent only
-					newParameterList[i] -= self.step
-					# for grid search
-					# newParameterList[i] -= self.step*(downScore - currentScore)
-				# for gradient descent only
-				elif upScore == currentScore == downScore:
-					newParameterList[i] += self.step
-			if newParameterList == [0, 0, 0]:
-				break
-			for i in range(len(parameterList)):
-				parameterList[i] += newParameterList[i]
-
-		print("score: ", score(parameterList))
-		return parameterList
 	@staticmethod
 	def calEffectSize(faultyQuantumState, faultfreeQuantumState):
-		# TODO
-		pass
+		deltaSquare = np.square(faultyQuantumState - faultfreeQuantumState)
+		effectSize = np.sum(delta_square / (faultyQuantumState + INT_MIN))
+		effectSize = np.sqrt(effectSize)
+		if effectSize < 0.1:
+			effectSize = 0.1
+		return effectSize
 
 	@staticmethod
 	def U2GateSetsTranspile(UParameters):
