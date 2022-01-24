@@ -9,8 +9,6 @@ from qatgFault import qatgFault
 from qatgUtil import U3, CNOT, matrixOperation, vectorDistance
 from qatgConfiguration import qatgConfiguration
 
-INT_MIN = 1E-100
-
 class qatg():
 	def __init__(self, circuitSize: int = None, basisGateSet: list[qGate], couplingMap: list[list], \
 			quantumRegisterName: str = 'q', classicalRegisterName: str = 'c', \
@@ -87,6 +85,8 @@ class qatg():
 				raise TypeError(f"{singleFault} should be subclass of qatgFault")
 			template = self.generateTestTemplate(faultObject = singleFault, initialState = singleInitialState, findActivationGate = findSingleElement)
 			configuration = self.buildSingleConfiguration(template, singleFault)
+			if simulateConfiguration:
+				configuration.simulate()
 			configurationList.append(configuration)
 
 		for twoFault in twoFaultList:
@@ -94,8 +94,11 @@ class qatg():
 				raise TypeError(f"{twoFault} should be subclass of qatgFault")
 			template = self.generateTestTemplate(faultObject = twoFault, initialState = twoInitialState, findActivationGate = findTwoElement)
 			configuration = self.buildTwoConfiguration(template, twoFault)
+			if simulateConfiguration:
+				configuration.simulate()
 			configurationList.append(configuration)
-		pass
+		
+		return configurationList
 
 	def buildSingleConfiguration(self, template, singleFault):
 		length = len(template)
@@ -107,10 +110,6 @@ class qatg():
 			qcFaultFree.append(Qgate.Barrier(qbIndex))
 		qcFaultFree.measure(self.quantumRegister, self.classicalregister)
 
-		# qcFaulty = deepcopy(qcFaultFree)
-		# remove the qgate of the qbIndex row
-		# for i in range(2*length):
-		# 	qcFaulty._data.pop(qbIndex)
 		qcFaulty = QuantumCircuit(self.quantumRegister, self.classicalregister)
 		faultyGateList = [singleFault.getFaulty(gate.params) if isinstance(gate, singleFault.getGateType()) else gate for gate in template]
 		# add faulty gate to the qbIndex row
@@ -118,7 +117,7 @@ class qatg():
 			qcFaulty.append(gate, [qbIndex])
 			qcFaulty.append(Qgate.Barrier(qbIndex))
 		qcFaulty.measure(self.quantumRegister, self.classicalregister)
-		
+
 		return qatgConfiguration(self.circuitSize, self.basisGateSet, self.simulationSetup, \
 			singleFault, qcFaultFree, qcFaulty)
 
@@ -157,6 +156,8 @@ class qatg():
 			qcfaulty.append(Qgate.Barrier(targetQubit))
 		qcfaulty.measure(self.quantumRegister, self.classicalregister)
 	
+		return qatgConfiguration(self.circuitSize, self.basisGateSet, self.simulationSetup, \
+			singleFault, qcFaultFree, qcFaulty)
 
 	def getTestTemplate(self, faultObject, initialState, findActivationGate):
 		templateGateList = [] # list of qGate
@@ -168,7 +169,7 @@ class qatg():
 			newElement, faultyQuantumState, faultfreeQuantumState = findActivationGate(faultObject = faultObject, faultyQuantumState = faultyQuantumState, faultfreeQuantumState = faultfreeQuantumState)
 			# newElement: list[np.array(gate)]
 			templateGateList.append(newElement)
-			effectSize = calEffectSize(faultyQuantumState, faultfreeQuantumState)
+			effectSize = self.calEffectSize(faultyQuantumState, faultfreeQuantumState)
 			if effectsize > self.minRequiredEffectSize:
 				break
 

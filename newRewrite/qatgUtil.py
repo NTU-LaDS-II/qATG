@@ -1,5 +1,8 @@
 import numpy as np
 
+INT_MIN = 1E-100
+INT_MAX = 1E15
+
 def U3(parameterList):
 	# theta=0, phi=0, lam=0
 	return np.array(
