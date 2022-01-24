@@ -6,14 +6,13 @@ from qiskit.circuit import Parameter
 import qiskit.circuit.library as qGate
 
 from qatgFault import qatgFault
-from qatgUtil import U3, CNOT, matrixOperation, vectorDistance
+from qatgUtil import *
 from qatgConfiguration import qatgConfiguration
 
 class qatg():
-	def __init__(self, circuitSize: int = None, basisGateSet: list[qGate], couplingMap: list[list], \
+	def __init__(self, circuitSize: int = None, basisGateSet: list[qGate], \
 			quantumRegisterName: str = 'q', classicalRegisterName: str = 'c', \
-			gridSlice: int = 21, \
-			gradientDescentSearchTime: int = 800, gradientDescentStep: float = 0.01, \
+			gridSlice: int = 21, gradientDescentSearchTime: int = 800, gradientDescentStep: float = 0.01, \
 			maxTestTemplateSize: int = 50, minRequiredEffectSize: float = 3):
 		if not isinstance(circuitSize, int):
 			raise TypeError('circuitSize must be int')
@@ -22,7 +21,7 @@ class qatg():
 		
 		# list[qGate]
 		self.basisGateSet = basisGateSet
-		self.couplingMap = couplingMap # not used
+		# self.couplingMap = couplingMap # not used
 		self.quantumRegisterName = quantumRegisterName
 		self.classicalRegisterName = classicalRegisterName
 		self.gridSlice = gridSlice
@@ -169,7 +168,7 @@ class qatg():
 			newElement, faultyQuantumState, faultfreeQuantumState = findActivationGate(faultObject = faultObject, faultyQuantumState = faultyQuantumState, faultfreeQuantumState = faultfreeQuantumState)
 			# newElement: list[np.array(gate)]
 			templateGateList.append(newElement)
-			effectSize = self.calEffectSize(faultyQuantumState, faultfreeQuantumState)
+			effectSize = calEffectSize(faultyQuantumState, faultfreeQuantumState)
 			if effectsize > self.minRequiredEffectSize:
 				break
 
@@ -279,15 +278,6 @@ class qatg():
 				parameterList[i] += newParameterList[i]
 
 		return parameterList
-
-	@staticmethod
-	def calEffectSize(faultyQuantumState, faultfreeQuantumState):
-		deltaSquare = np.square(faultyQuantumState - faultfreeQuantumState)
-		effectSize = np.sum(deltaSquare / (faultyQuantumState + INT_MIN))
-		effectSize = np.sqrt(effectSize)
-		if effectSize < 0.1:
-			effectSize = 0.1
-		return effectSize
 
 	@staticmethod
 	def U2GateSetsTranspile(UParameters):

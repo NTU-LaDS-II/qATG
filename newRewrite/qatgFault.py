@@ -3,7 +3,7 @@ import qiskit.circuit.library as qGate
 from qiskit.circuit.gate import Gate
 
 class qatgFault(abc.ABC):
-	def __init__(self, gateType, qubit, description = "A qATG Fault."):
+	def __init__(self, gateType, qubit, description = None):
 		if not issubclass(gateType, Gate):
 			raise TypeError('gateType must be one of qiskit.circuit.library')
 		self.gateType = gateType
@@ -12,7 +12,7 @@ class qatgFault(abc.ABC):
 		self.qubit = qubit
 		if len(qubit) != gateType.num_qubits:
 			raise ValueError("the number of qubits the gate acts on and the number of input qubits does not match.")
-		self.description = description
+		self.description = f"gateType: {self.gateType}, qubits: {self.qubit}" if not description else description
 
 	def __str__(self):
 		return self.description

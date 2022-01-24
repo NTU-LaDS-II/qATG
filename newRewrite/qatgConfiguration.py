@@ -6,6 +6,7 @@ from qiskit import execute
 from qiskit.providers.aer.noise import NoiseModel
 from qiskit.providers.aer.noise.errors import standard_errors, ReadoutError
 
+from qatgUtil import *
 random.seed(114514)
 
 class qatgConfiguration():
@@ -94,7 +95,7 @@ class qatgConfiguration():
 			raise ValueError('input shape not consistency')
 
 		degreeOfFreedom = faultfreeDistribution.shape[0] - 1
-		effectSize = self.calEffectSize(faultyDistribution, faultfreeDistribution)
+		effectSize = calEffectSize(faultyDistribution, faultfreeDistribution)
 		lowerBoundEffectSize = 0.8 if effectSize > 0.8 else effectSize
 
 		repetition = chi2.ppf(alpha, degreeOfFreedom) / (lowerBoundEffectSize ** 2)
@@ -147,12 +148,3 @@ class qatgConfiguration():
 			if chiStatistic > chiValue:
 				testescape += 1
 		return testescape / self.testSampleTime
-
-	@staticmethod
-	def calEffectSize(faultyQuantumState, faultfreeQuantumState):
-		deltaSquare = np.square(faultyQuantumState - faultfreeQuantumState)
-		effectSize = np.sum(deltaSquare / (faultyQuantumState + INT_MIN))
-		effectSize = np.sqrt(effectSize)
-		if effectSize < 0.1:
-			effectSize = 0.1
-		return effectSize

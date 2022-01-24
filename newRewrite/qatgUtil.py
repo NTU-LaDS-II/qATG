@@ -16,12 +16,6 @@ def U3(parameterList):
 			 ]],
 			dtype=complex)
 
-def CNOT():
-	return  np.array([[1,0,0,0],
-					  [0,0,0,1],
-					  [0,0,1,0],
-					  [0,1,0,0]])
-
 def matrixOperationForOneQubit(matrixList, quantumState=[]):
 	matrixList = [np.array(matrix) for matrix in matrixList]
 	quantumState = np.array(quantumState)
@@ -41,13 +35,10 @@ def vectorDistance(vector1, vector2):
 def toProbability(probability):
 	return np.array(probability*np.conj(probability), dtype=float)
 
-def prob2Distribution(vector):
-	if type(vector) == dict:
-		distribution = np.zeros(len(vector))
-		for i in vector:
-			distribution[int(i, 2)] = vector[i]
-	else:
-		distribution = np.array(vector)
-
-	distribution = distribution/np.sum(distribution)
-	return distribution
+def calEffectSize(faultyQuantumState, faultfreeQuantumState):
+	deltaSquare = np.square(faultyQuantumState - faultfreeQuantumState)
+	effectSize = np.sum(deltaSquare / (faultyQuantumState + INT_MIN))
+	effectSize = np.sqrt(effectSize)
+	if effectSize < 0.1:
+		effectSize = 0.1
+	return effectSize
