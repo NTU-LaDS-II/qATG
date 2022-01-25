@@ -11,10 +11,9 @@ from qatgUtil import U3
 # single faults
 class myUFault(qatgFault):
 	def __init__(self, qubit, threeParameter, faultList):
-		super(myUFault, self).__init__(qGate.UGate, qubit, f"gateType: U, qubits: {qubit}, params: {threeParameters}")
+		super(myUFault, self).__init__(qGate.UGate, qubit, f"gateType: U, qubits: {qubit}, params: {threeParameter}")
 		self.threeParameter = threeParameter
 		self.faultList = faultList
-		
 
 	def getOriginalGateParameters(self):
 		return self.threeParameter
@@ -22,9 +21,10 @@ class myUFault(qatgFault):
 	def getFaulty(self, parameters):
 		if len(parameters) == 0:
 			raise ValueError("No parameters for U!")
-		return qGate.UGate([parameter + fault for parameter, fault in zip(parameters, self.faultList)])
+		return qGate.UGate(*[parameter + fault for parameter, fault in zip(parameters, self.faultList)])
 
-singleFaultList = []
+singleFaultList = [myUFault(0, [2*np.pi] * 3, fault) for fault in [[-0.1*np.pi, 0, 0], [0, -0.1*np.pi, 0], [0, 0, -0.1*np.pi]]]
+
 # two faults
 class myCNOTFault(qatgFault):
 	"""my CNOT fault"""
@@ -54,8 +54,9 @@ class myCNOTFault(qatgFault):
 		return self.faultyGate
 
 # couplingMap = [[0, 1], [1, 0], [1, 2], [1, 3], [2, 1], [3, 1], [3, 4], [4, 3]]
-couplingMap = [[0, 1]]
-twoFaultList = [myCNOTFault(coupling, [0.05 * np.pi] * 6) for coupling in couplingMap]
+# couplingMap = [[0, 1]]
+# twoFaultList = [myCNOTFault(coupling, [0.05 * np.pi] * 6) for coupling in couplingMap]
+twoFaultList = []
 
 		
 generator = qatg(circuitSize = 5, basisGateSet = [qGate.UGate])

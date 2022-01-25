@@ -173,7 +173,7 @@ class qatg():
 	def findSingleElement(self, faultObject, faultyQuantumState, faultfreeQuantumState):
 		# optimize activation gate
 		optimalParameterList, faultyQuantumState, faultfreeQuantumState = self.singleActivationOptimization(faultyQuantumState, faultfreeQuantumState, faultObject)
-		newElement = U2GateSetsTranspile(optimalParameterList) # a list of qGate
+		newElement = self.U2GateSetsTranspile(optimalParameterList) # a list of qGate
 		newElement.append(faultObject.getOriginalGate())
 		return newElement, faultyQuantumState, faultfreeQuantumState
 
@@ -215,6 +215,7 @@ class qatg():
 			for i in range(len(parameterList)):
 				parameterList[i] += newParameterList[i]
 
+		print(score(parameterList))
 		faultyQuantumState = matrixOperation(np.concatenate([self.insertFault2GateList(self.U2GateSetsTranspile(parameterList), faultObject), [faultyGateMatrix]]), faultyQuantumState)
 		faultfreeQuantumState = matrixOperation([U3(parameterList), originalGateMatrix], faultfreeQuantumState)
 

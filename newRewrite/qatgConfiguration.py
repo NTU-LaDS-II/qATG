@@ -143,7 +143,7 @@ class qatgConfiguration():
 			repetition += 1
 			nonCentrality = repetition * (effectSize ** 2)
 			chi2Value = chi2.ppf(alpha, degreeOfFreedom)
-			nonChi2Value = ncx2.ppf(1 - beta, degreeOfFreedom, nonCentrality)				
+			nonChi2Value = ncx2.ppf(1 - beta, degreeOfFreedom, nonCentrality)
 		
 		boundary = (nonChi2Value * 0.3 + chi2Value * 0.7)
 		if repetition >= INT_MAX or repetition <= 0:

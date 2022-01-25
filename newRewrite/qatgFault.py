@@ -10,7 +10,7 @@ class qatgFault(abc.ABC):
 		if isinstance(qubit, int):
 			qubit = [qubit]
 		self.qubit = qubit
-		if len(qubit) != gateType().num_qubits:
+		if len(qubit) != gateType(*[0] * (gateType.__init__.__code__.co_argcount - len(gateType.__init__.__defaults__))).num_qubits:
 			raise ValueError("the number of qubits the gate acts on and the number of input qubits does not match.")
 		self.description = f"gateType: {self.gateType}, qubits: {self.qubit}" if not description else description
 
