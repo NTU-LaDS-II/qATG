@@ -45,14 +45,48 @@ class qatgConfiguration():
 	def __str__(self):
 		rt = ""
 		rt += "Target fault: " + str(self.faultObject) + "\n"
-		rt += "Length: " + str(len(self.faultfreeQuantumCircuit))
+		rt += "Length: " + str(self.myDepth(self.faultfreeQuantumCircuit))
 		rt += "\tRepetition: " + str(self.repetition)
-		rt += "\tCost: " + str(len(self.faultfreeQuantumCircuit) * self.repetition) + "\n"
+		rt += "\tCost: " + str(self.myDepth(self.faultfreeQuantumCircuit) * self.repetition) + "\n"
 		rt += "Overkill: "+str(self.simulatedOverkill)
 		rt += "\tTest Escape: " + str(self.simulatedTestescape) + "\n"
 		# rt += "Circuit: \n" + str(self.faultfreeQuantumCircuit)
 
 		return rt
+
+	@staticmethod
+	def myDepth(ckt) -> int:
+			bit_indices = {bit: idx for idx, bit in enumerate(ckt.qubits + ckt.clbits)}
+			if not bit_indices:
+				return 0
+
+			op_stack = [0] * len(bit_indices)
+
+			for instr, qargs, cargs in ckt._data:
+				levels = []
+				reg_ints = []
+				for ind, reg in enumerate(qargs + cargs):
+					reg_ints.append(bit_indices[reg])
+					if not instr._directive:
+						levels.append(op_stack[reg_ints[ind]] + 1)
+					else:
+						levels.append(op_stack[reg_ints[ind]])
+				if instr.condition:
+					if isinstance(instr.condition[0], Clbit):
+						condition_bits = [instr.condition[0]]
+					else:
+						condition_bits = instr.condition[0]
+					for cbit in condition_bits:
+						idx = bit_indices[cbit]
+						if idx not in reg_ints:
+							reg_ints.append(idx)
+							levels.append(op_stack[idx] + 1)
+
+				max_level = max(levels) if levels else 0
+				for ind in reg_ints:
+					op_stack[ind] = max_level
+
+			return max(op_stack)
 
 	def getNoiseModel(self):
 		# Depolarizing quantum errors
@@ -102,14 +136,14 @@ class qatgConfiguration():
 		lowerBoundEffectSize = 0.8 if effectSize > 0.8 else effectSize
 
 		repetition = chi2.ppf(alpha, degreeOfFreedom) / (lowerBoundEffectSize ** 2)
-		while True:
+		nonCentrality = repetition * (effectSize ** 2)
+		chi2Value = chi2.ppf(alpha, degreeOfFreedom)
+		nonChi2Value = ncx2.ppf(1 - beta, degreeOfFreedom, nonCentrality)
+		while nonChi2Value < chi2Value:
+			repetition += 1
 			nonCentrality = repetition * (effectSize ** 2)
 			chi2Value = chi2.ppf(alpha, degreeOfFreedom)
-			nonChi2Value = ncx2.ppf(1 - beta, degreeOfFreedom, nonCentrality)
-			if nonChi2Value >= chi2Value:
-				break
-			else:
-				repetition += 1
+			nonChi2Value = ncx2.ppf(1 - beta, degreeOfFreedom, nonCentrality)				
 		
 		boundary = (nonChi2Value * 0.3 + chi2Value * 0.7)
 		if repetition >= INT_MAX or repetition <= 0:
