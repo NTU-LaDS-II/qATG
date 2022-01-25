@@ -1,38 +1,43 @@
 # quantum-ATG
 
-## Initialize
+## qatg
+A qatg object:
 ```python=
-generator = ATPG(circuit_size, gate_set, alpha, beta, grid_slice, search_time, step, sample_time, max_element, min_required_effect_size)
+generator = qatg(circuitSize: int, basisGateSet: list[qGate], \
+			quantumRegisterName: str = 'q', classicalRegisterName: str = 'c', \
+			gridSlice: int = 21, gradientDescentSearchTime: int = 800, gradientDescentStep: float = 0.01, \
+			maxTestTemplateSize: int = 50, minRequiredEffectSize: float = 3)
 ```
-* `circuit_size`: the number of the qubits of the QC
-* `gate_set`: the gate set supported by the QC. Must be universal.
-	* The gates are from `qiskit.circuit.library`
-* `alpha`: 1-test escape. Default 0.99
-* `beta`: 1-overkill. Default 0.999
-* `grid_slice`: the slices of each parameters that the grid search uses. Default 11
-* `search_time`: the search time of the fine-tune gradient descent. Default 800
-* `step`: the step size of the fine-tune gradient descent. Default 0.01
-* `sample_time`: the sample time while simulating the configuration. Default 10000
-* `max_element`: the max test element number of a test template. Default 50
-* `min_required_effect_size`: the minimum effect size required to complete a test template.
-	* If the number of the test elements is not larger than `max_element`, but the effect size is over `min_required_effect_size`, the test template is completed.
-	* If the number of the test elements exceeds the `max_element`, the test template is completed no matter how much the effect size is.
+```basisGateSet``` can be an universal gate set.
+```python=
+generator.configurationSimulationSetup(oneQubitErrorProb = 0.001, twoQubitErrorProb = 0.1, \
+			zeroReadoutErrorProb = [0.985, 0.015], oneReadoutErrorProb = [0.015, 0.985], \
+			targetAlpha: float = 0.99, targetBeta: float = 0.999, \
+			simulationShots: int = 200000, testSampleTime: int = 10000)
+```
+to setup the simulation related parameters. Those parameters will type into ```qatgConfiguration``` that is produced by ```qatg```.
 
-## Get Single Fault List
+## qatgConfiguration
+To get the configuration:
 ```python=
-single_fault_list = generator.get_single_fault_list()
+configurationList = generator.getTestConfiguration(self, singleFaultList, twoFaultList, \
+			singleInitialState: np.array = np.array([1, 0]), twoInitialState: np.array = np.array([1, 0, 0, 0]), simulateConfiguration: bool = True)
 ```
+The type of ```configurationList``` is ```list[qatgConfiguration]```.
+```configuration.simulate()``` to simulate a ```qatgConfiguration```.
 
-## Get Two Fault List
+## Faults
+```singleFaultList``` is a list of single-qubit faults that you want to put into qatg.
+```twoFaultList``` is a list of two-qubit faults that you want to put into qatg.
+To generate a fault, inherit ```qatgFault```,
+and override ```getOriginalGateParameters(self)``` and ```getFaulty(self, parameters)```.
+Initialization of ```qatgFault```:
 ```python=
-two_fault_list = generator.get_single_fault_list(coupling_map, two_qubit_faults)
+def __init__(self, gateType, qubit, description = None)
 ```
-* `coupling_map`: The topology map of the QC.
-* `two_qubit_faults`: the admired two-qubit faults
-	* type: `list`
-	* for each element of the list: a `list` contains of six values, are the six values of the two-qubit fault
-
-## Get Configuration
-```python=
-configuration_list = generator.get_test_configuration(single_fault_list, two_fault_list)
-```
+```gateType``` is the gate type that the fault focuses on, should check if ```issubclass(gateType, qiskit.circuit.gate.Gate)```
+```qubit``` is the qubit(s) that the fault will apply on. Can be a integer or a list of integer. Should match the number of qubits the gate acts on.
+```description``` is the self-defined description for printing convenience.
+```getOriginalGateParameters(self)``` should return a parameter list, which is from the original gate (or faultfree gate) of the fault. For example, for ```UGate``` you should return ```[theta, phi, lam]```, and for ```CXGate``` you should return ```[]```.
+```getFaulty(self, parameters)``` should return your faulty gate if the faultfree gate's parameters are ```parameters```. Should check the return type fits ```issubclass(return, qiskit.circuit.gate.Gate)```.
+Note that since qiskit is stupid, it can't figure out a complex circuit's effective matrix if you didn't assign it. Since we used ```to_matrix()``` in our program, we would like you to implement ```faultyGate.__array___``` so we can call it by ```to_matrix()```. An example is in ```example.py```.
