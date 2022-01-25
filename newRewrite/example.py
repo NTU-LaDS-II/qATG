@@ -9,6 +9,21 @@ from qatgUtil import U3
 
 # Faults
 # single faults
+class myUFault(qatgFault):
+	def __init__(self, qubit, threeParameter, faultList):
+		super(myUFault, self).__init__(qGate.UGate, qubit, f"gateType: U, qubits: {qubit}, params: {threeParameters}")
+		self.threeParameter = threeParameter
+		self.faultList = faultList
+		
+
+	def getOriginalGateParameters(self):
+		return self.threeParameter
+
+	def getFaulty(self, parameters):
+		if len(parameters) == 0:
+			raise ValueError("No parameters for U!")
+		return qGate.UGate([parameter + fault for parameter, fault in zip(parameters, self.faultList)])
+
 singleFaultList = []
 # two faults
 class myCNOTFault(qatgFault):
