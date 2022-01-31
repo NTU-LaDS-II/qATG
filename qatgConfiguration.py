@@ -88,6 +88,9 @@ class qatgConfiguration():
 
 			return max(op_stack)
 
+	def getConfigurationQuantumCircuit(self):
+		return self.faultfreeQuantumCircuit
+
 	def getNoiseModel(self):
 		# Depolarizing quantum errors
 		oneQubitError = standard_errors.depolarizing_error(self.oneQubitErrorProb, 1)

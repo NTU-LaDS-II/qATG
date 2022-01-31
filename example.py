@@ -18,7 +18,7 @@ class myUFault(qatgFault):
 	def getOriginalGateParameters(self):
 		return self.threeParameter
 
-	def getFaulty(self, parameters):
+	def createFaulty(self, parameters):
 		if len(parameters) == 0:
 			raise ValueError("No parameters for U!")
 		return qGate.UGate(*[parameter + fault for parameter, fault in zip(parameters, self.faultList)])
@@ -48,7 +48,7 @@ class myCNOTFault(qatgFault):
 	def getOriginalGateParameters(self):
 		return []
 
-	def getFaulty(self, parameters):
+	def createFaulty(self, parameters):
 		if len(parameters) != 0:
 			raise ValueError("No parameters for CNOT!")
 		return self.faultyGate
@@ -61,7 +61,7 @@ twoFaultList = []
 		
 generator = qatg(circuitSize = 5, basisGateSet = [qGate.UGate])
 generator.configurationSimulationSetup()
-configurationList = generator.getTestConfiguration(singleFaultList, twoFaultList)
+configurationList = generator.createTestConfiguration(singleFaultList, twoFaultList)
 
 for configuration in configurationList:
 	print(configuration)

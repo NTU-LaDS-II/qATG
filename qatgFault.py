@@ -34,8 +34,8 @@ class qatgFault(abc.ABC):
 		return self.getOriginal()
 
 	@abc.abstractmethod
-	def getFaulty(self, parameters):
+	def createFaulty(self, parameters):
 		return NotImplemented
 
-	def getFaultyGate(self):
-		return self.getFaulty()
+	def createFaultyGate(self):
+		return self.createFaulty()

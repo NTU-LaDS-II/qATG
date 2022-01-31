@@ -64,7 +64,7 @@ class qatg():
 		self.simulationSetup['testSampleTime'] = testSampleTime
 		return
 
-	def getTestConfiguration(self, singleFaultList, twoFaultList, \
+	def createTestConfiguration(self, singleFaultList, twoFaultList, \
 			singleInitialState: np.array = np.array([1, 0]), twoInitialState: np.array = np.array([1, 0, 0, 0]), simulateConfiguration: bool = True):
 		# simulateConfiguration: True, simulate the configuration and generate test repetition
 		# false: don't simulate and repetition = NaN
@@ -76,7 +76,7 @@ class qatg():
 		# singleFault: a class object inherit class Fault
 		# gateType: faultObject.getGateType()
 		# original gate parameters: faultObject.getOriginalGateParameters()
-		# faulty: faultObject.getFaulty(faultfreeParameters)
+		# faulty: faultObject.createFaulty(faultfreeParameters)
 
 		configurationList = []
 
@@ -110,7 +110,7 @@ class qatg():
 		qcFaultFree.measure(self.quantumRegister, self.classicalRegister)
 
 		qcFaulty = QuantumCircuit(self.quantumRegister, self.classicalRegister)
-		faultyGateList = [singleFault.getFaulty(gate.params) if isinstance(gate, singleFault.getGateType()) else gate for gate in template]
+		faultyGateList = [singleFault.createFaulty(gate.params) if isinstance(gate, singleFault.getGateType()) else gate for gate in template]
 		# add faulty gate to the qbIndex row
 		for gate in faultyGateList:
 			qcFaulty.append(gate, [qbIndex])
@@ -138,7 +138,7 @@ class qatg():
 		
 		qcFaultFree.measure(self.quantumRegister, self.classicalRegister)
 		qcFaulty = QuantumCircuit(self.quantumRegister, self.classicalRegister)
-		faultyGateList = [activationGatePair if isinstance(activationGatePair, list) else twoFault.getFaulty(activationGatePair.params) for activationGatePair in template]
+		faultyGateList = [activationGatePair if isinstance(activationGatePair, list) else twoFault.createFaulty(activationGatePair.params) for activationGatePair in template]
 		
 		for activationGatePair in faultyGateList:
 			if isinstance(activationGatePair, list):
@@ -180,7 +180,7 @@ class qatg():
 	def singleActivationOptimization(self, faultyQuantumState, faultfreeQuantumState, faultObject):
 		originalGateParameters = faultObject.getOriginalGateParameters() # list of parameters
 		originalGateMatrix = faultObject.getOriginalGate().to_matrix()
-		faultyGateMatrix = faultObject.getFaulty(originalGateParameters).to_matrix() # np.array(gate)
+		faultyGateMatrix = faultObject.createFaulty(originalGateParameters).to_matrix() # np.array(gate)
 
 		def score(parameters):
 			return vectorDistance(
@@ -234,7 +234,7 @@ class qatg():
 		# for only CNOT have fault
 		originalGateParameters = faultObject.getOriginalGateParameters()
 		originalGateMatrix = faultObject.getOriginalGate().to_matrix()
-		faultyGateMatrix = faultObject.getFaulty(originalGateParameters).to_matrix()
+		faultyGateMatrix = faultObject.createFaulty(originalGateParameters).to_matrix()
 		
 		def score(parameters):
 			return vectorDistance(
@@ -292,5 +292,5 @@ class qatg():
 
 	@staticmethod
 	def insertFault2GateList(gateList, faultObject):
-		return [faultObject.getFaulty(gate.params).to_matrix() if isinstance(gate, faultObject.getGateType()) else gate.to_matrix() for gate in gateList]
+		return [faultObject.createFaulty(gate.params).to_matrix() if isinstance(gate, faultObject.getGateType()) else gate.to_matrix() for gate in gateList]
 		
