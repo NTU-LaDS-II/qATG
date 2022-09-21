@@ -39,3 +39,6 @@ class qatgFault(abc.ABC):
 
 	def getFaultyGate(self):
 		return self.getFaulty()
+
+	# createFaultyGate -> Gate
+	# getFaultyBehavior -> function

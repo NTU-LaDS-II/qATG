@@ -8,7 +8,12 @@ from qiskit.providers.aer.noise import NoiseModel
 from qiskit.providers.aer.noise.errors import standard_errors, ReadoutError
 
 from qatgUtil import *
-random.seed(114514)
+random.seed(8964)
+
+# add method to combine configurations?
+# raise error if qubit conflict
+# write in user manual
+# just template
 
 class qatgConfiguration():
 	def __init__(self, circuitSize: int, basisGateSet, simulationSetup: dict, \
