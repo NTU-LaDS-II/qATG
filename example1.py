@@ -13,8 +13,9 @@ class myUFault(qatgFault):
 	def createFaultyGate(self, faultfreeGate):
 		return qGate.UGate(faultfreeGate.params[0] - 0.1*np.pi, faultfreeGate.params[1], faultfreeGate.params[2])
 
-generator = qatg(circuitSize = 1, basisGateSet = [qGate.UGate], circuitInitializedStates = {1: [1, 0]})
-configurationList = generator.getTestConfiguration([myUFault([2*np.pi, 2*np.pi, 2*np.pi])])
+generator = qatg(circuitSize = 1, basisGateSet = [qGate.UGate], circuitInitializedStates = {1: [1, 0]}, minRequiredEffectSize = 2)
+configurationList = generator.getTestConfiguration([myUFault([np.pi, np.pi, np.pi])])
 
 print(configurationList[0])
-print(configurationList[0].faultfreeQCKT)
+configurationList[0].circuit.draw('mpl').show()
+input()
