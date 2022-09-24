@@ -14,8 +14,8 @@ class qatg():
 	def __init__(self, \
 			circuitSize: int, basisGateSet: list[qGate], circuitInitializedStates: dict, \
 			quantumRegisterName: str = 'q', classicalRegisterName: str = 'c', \
-			gridSlice: int = 11, gradientDescentMaxIteration: int = 1000, \
-			gradientDescentStep: float = 0.2, gradientMeasureStep: float = 0.0001, gradientDeltaThreshold: float = 1e-8, \
+			gridSlice: int = 11, gradientDescentMaxIteration: int = 800, \
+			gradientDescentStep: float = 0.5, gradientMeasureStep: float = 0.0001, gradientDeltaThreshold: float = 1e-8, \
 			maxTestTemplateSize: int = 50, minRequiredEffectSize: float = 3, \
 			oneQubitErrorProb = 0.001, twoQubitErrorProb = 0.1, \
 			zeroReadoutErrorProb = [0.985, 0.015], oneReadoutErrorProb = [0.015, 0.985], \
@@ -163,35 +163,22 @@ class qatg():
 
 		# gradient
 		for k in range(self.gradientDescentMaxIteration):
-			deltaParameterSet = [[0, 0, 0] for _ in range(qubitSize)]
+			deltaParameter = 0
 			currentOptimalScore = score(optimalParameterSet)
 			tempParameterSet = deepcopy(optimalParameterSet)
-			# find gradient
+			maxDelta = 0
 			for m in range(qubitSize):
 				for n in range(3):
+					# find gradient
 					tempParameterSet[m][n] += self.gradientMeasureStep
 					currentTempScore = score(tempParameterSet)
-					deltaParameterSet[m][n] = (currentTempScore - currentOptimalScore) / self.gradientMeasureStep
+					deltaParameter = (currentTempScore - currentOptimalScore) / self.gradientMeasureStep
 					tempParameterSet[m][n] -= self.gradientMeasureStep
-			# evaluate, with 2-norm
-			deltaParameterSquare = 0
-			for m in range(len(deltaParameterSet)):
-				for n in range(3):
-					deltaParameterSquare += deltaParameterSet[m][n] ** 2
-			if deltaParameterSquare ** 0.5 < self.gradientDeltaThreshold:
+					optimalParameterSet[m][n] += self.gradientDescentStep * deltaParameter # + since concave?
+					maxDelta = abs(deltaParameter) if abs(deltaParameter) > maxDelta else maxDelta
+			print(score(optimalParameterSet))
+			if maxDelta < self.gradientDeltaThreshold:
 				break
-			# update
-			def addDelta(x, t, dx):
-				for m in range(len(x)):
-					for n in range(3):
-						x[m][n] += t * dx[m][n]
-				return x
-			tempParameterSet = addDelta(optimalParameterSet, self.gradientDescentStep, deltaParameterSet)
-			if(score(tempParameterSet) < currentOptimalScore):
-				break
-			optimalParameterSet = deepcopy(tempParameterSet)
-			# print(score(optimalParameterSet))
-
 		print(f"After : {score(optimalParameterSet)}")
 		print(k)
 
