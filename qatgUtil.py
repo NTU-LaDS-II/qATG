@@ -3,7 +3,7 @@ import numpy as np
 INT_MIN = 1E-100
 INT_MAX = 1E15
 
-def U3(parameterList):
+def qatgU3(parameterList):
 	# theta=0, phi=0, lam=0
 	return np.array(
 			[[
@@ -16,23 +16,24 @@ def U3(parameterList):
 			 ]],
 			dtype=complex)
 
-def matrixOperation(matrixList, quantumState=[]):
-	matrixList = [np.array(matrix) for matrix in matrixList]
-	quantumState = np.array(quantumState)
-	for matrix in matrixList:
-		quantumState = np.dot(matrix, quantumState)
-	return quantumState
-	
+def qatgWrapToPi(value):
+	# not yet implemented
+	return value
+
 def vectorDistance(vector1, vector2):
 	return np.sum(np.square(np.abs(np.subtract(toProbability(vector1), toProbability(vector2)))))
 
 def toProbability(probability):
-	return np.array(probability*np.conj(probability), dtype=float)
+	# return np.array(probability*np.conj(probability), dtype=float)
+	# return np.array([np.abs(prob) for prob in probability], dtype = float)
+	return np.square(np.abs(probability))
 
 def calEffectSize(faultyQuantumState, faultfreeQuantumState):
-	deltaSquare = np.square(faultyQuantumState - faultfreeQuantumState)
-	effectSize = np.sum(deltaSquare / (faultyQuantumState + INT_MIN))
+	# deltaSquare = np.square(faultyQuantumState - faultfreeQuantumState)
+	# effect size might be complex TODO
+	deltaSquare = np.square(np.abs(faultyQuantumState - faultfreeQuantumState))
+	effectSize = np.sum(deltaSquare / (np.abs(faultyQuantumState) + INT_MIN))
 	effectSize = np.sqrt(effectSize)
-	if effectSize < 0.1:
+	if effectSize < 0.1: # why? TODO
 		effectSize = 0.1
 	return effectSize

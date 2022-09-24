@@ -4,6 +4,9 @@ from math import ceil
 from scipy.stats import chi2, ncx2
 from qiskit import Aer
 from qiskit import execute
+from qiskit import QuantumRegister, ClassicalRegister, QuantumCircuit
+import qiskit.circuit.library as qGate
+from qiskit.circuit.gate import Gate
 from qiskit.providers.aer.noise import NoiseModel
 from qiskit.providers.aer.noise.errors import standard_errors, ReadoutError
 
@@ -11,11 +14,14 @@ from qatgUtil import *
 random.seed(114514)
 
 class qatgConfiguration():
-	def __init__(self, circuitSize: int, basisGateSet, simulationSetup: dict, \
-			faultObject, faultfreeQuantumCircuit, faultyQuantumCircuit):
-		self.circuitSize = circuitSize
-		self.basisGateSet = basisGateSet
-		self.basisGateSetString = [gate.__name__[:-4].lower() for gate in self.basisGateSet]
+	"""the return results of qatg is described as qatgConfiguration objects"""
+	def __init__(self, circuitSetup: dict, simulationSetup: dict, faultObject):
+		# circuitSetup: circuitSize, basisGateSet, quantumRegisterName, classicalRegisterName, circuitInitializedStates
+		
+		self.circuitSize = circuitSetup['circuitSize']
+		self.basisGateSet = circuitSetup['basisGateSet']
+		self.basisGateSetString = circuitSetup['basisGateSetString']
+		self.circuitInitializedStates = circuitSetup['circuitInitializedStates']
 		self.backend = Aer.get_backend('qasm_simulator')
 
 		self.oneQubitErrorProb = simulationSetup['oneQubitErrorProb']
@@ -30,8 +36,14 @@ class qatgConfiguration():
 		self.testSampleTime = simulationSetup['testSampleTime']
 
 		self.faultObject = faultObject
-		self.faultfreeQuantumCircuit = faultfreeQuantumCircuit
-		self.faultyQuantumCircuit = faultyQuantumCircuit
+
+		quantumRegisterName = circuitSetup['quantumRegisterName']
+		classicalRegisterName = circuitSetup['classicalRegisterName']
+		self.quantumRegister = QuantumRegister(self.circuitSize, quantumRegisterName)
+		self.classicalRegister = ClassicalRegister(self.circuitSize, classicalRegisterName)
+
+		self.faultfreeQCKT = QuantumCircuit(self.quantumRegister, self.classicalRegister)
+		self.faultyQCKT = QuantumCircuit(self.quantumRegister, self.classicalRegister)
 
 		self.faultfreeDistribution = []
 		self.faultyDistribution = []
@@ -39,57 +51,24 @@ class qatgConfiguration():
 		self.boundary = np.nan
 		self.simulatedOverkill = np.nan
 		self.simulatedTestescape = np.nan
+		self.cktDepth = np.nan
+		self.effectSize = np.nan
 
 		self.noiseModel = self.getNoiseModel()
 
 	def __str__(self):
 		rt = ""
-		rt += "Target fault: " + str(self.faultObject) + "\n"
-		rt += "Length: " + str(self.myDepth(self.faultfreeQuantumCircuit))
+		rt += "Target fault: { " + str(self.faultObject) + " }\n"
+		rt += "Length: " + str(self.cktDepth)
 		rt += "\tRepetition: " + str(self.repetition)
-		rt += "\tCost: " + str(self.myDepth(self.faultfreeQuantumCircuit) * self.repetition) + "\n"
-		rt += "Overkill: "+str(self.simulatedOverkill)
+		rt += "\tCost: " + str(self.cktDepth * self.repetition) + "\n"
+		rt += "Chi-Value boundary: " + str(self.boundary) + "\n"
+		rt += "Effect Size: " + str(self.effectSize) + "\n"
+		rt += "Overkill: "+ str(self.simulatedOverkill)
 		rt += "\tTest Escape: " + str(self.simulatedTestescape) + "\n"
-		# rt += "Circuit: \n" + str(self.faultfreeQuantumCircuit)
+		# rt += "Circuit: \n" + str(self.faultfreeQCKT)
 
 		return rt
-
-	@staticmethod
-	def myDepth(ckt) -> int:
-			bit_indices = {bit: idx for idx, bit in enumerate(ckt.qubits + ckt.clbits)}
-			if not bit_indices:
-				return 0
-
-			op_stack = [0] * len(bit_indices)
-
-			for instr, qargs, cargs in ckt._data:
-				levels = []
-				reg_ints = []
-				for ind, reg in enumerate(qargs + cargs):
-					reg_ints.append(bit_indices[reg])
-					if not instr._directive:
-						levels.append(op_stack[reg_ints[ind]] + 1)
-					else:
-						levels.append(op_stack[reg_ints[ind]])
-				if instr.condition:
-					if isinstance(instr.condition[0], Clbit):
-						condition_bits = [instr.condition[0]]
-					else:
-						condition_bits = instr.condition[0]
-					for cbit in condition_bits:
-						idx = bit_indices[cbit]
-						if idx not in reg_ints:
-							reg_ints.append(idx)
-							levels.append(op_stack[idx] + 1)
-
-				max_level = max(levels) if levels else 0
-				for ind in reg_ints:
-					op_stack[ind] = max_level
-
-			return max(op_stack)
-
-	def getConfigurationQuantumCircuit(self):
-		return self.faultfreeQuantumCircuit
 
 	def getNoiseModel(self):
 		# Depolarizing quantum errors
@@ -105,86 +84,129 @@ class qatgConfiguration():
 
 		return noiseModel
 
+	def setTemplate(self, template, effectSize):
+		# template itself is faultfree
+		self.effectSize = effectSize
+
+		qbIndexes = self.faultObject.getQubits()
+
+		for gates in template:
+			# in template, a list for seperate qubits and a gate for all qubits
+			if isinstance(gates, list):
+				for k in range(len(gates)):
+					self.faultfreeQCKT.append(gates[k], [qbIndexes[k]])
+					if self.faultObject.isSameGateType(gates[k]):
+						self.faultyQCKT.append(self.faultObject.createFaultyGate(gates[k]), [qbIndexes[k]])
+					else:
+						self.faultyQCKT.append(gates[k], [qbIndexes[k]])
+			elif issubclass(type(gates), Gate):
+				self.faultfreeQCKT.append(gates, qbIndexes)
+				if self.faultObject.isSameGateType(gates):
+					self.faultyQCKT.append(self.faultObject.createFaultyGate(gates), qbIndexes)
+				else:
+					self.faultyQCKT.append(gates, qbIndexes)
+			else:
+				raise TypeError(f"Unknown object \"{gates}\" in template")
+
+			for qb in qbIndexes:
+				self.faultfreeQCKT.append(qGate.Barrier(qb))
+				self.faultyQCKT.append(qGate.Barrier(qb))
+
+		self.faultfreeQCKT.measure(self.quantumRegister, self.classicalRegister)
+		self.faultyQCKT.measure(self.quantumRegister, self.classicalRegister)
+
+		self.cktDepth = len(template)
+
+		return
+
 	def simulate(self):
-		simulateJob = execute(self.faultfreeQuantumCircuit, self.backend, noise_model = self.noiseModel, shots = self.simulationShots)
+		simulateJob = execute(self.faultfreeQCKT, self.backend, noise_model = self.noiseModel, shots = self.simulationShots)
 		counts = simulateJob.result().get_counts()
-		
 		self.faultfreeDistribution = [0] * (2 ** self.circuitSize)
-		for i in counts:
-			self.faultfreeDistribution[int(i, 2)] = counts[i]
+		for k in counts:
+			self.faultfreeDistribution[int(k, 2)] = counts[k]
 		self.faultfreeDistribution = np.array(self.faultfreeDistribution / np.sum(self.faultfreeDistribution))
 
-		simulateJob = execute(self.faultyQuantumCircuit, self.backend, noise_model = self.noiseModel, shots = self.simulationShots)
+		simulateJob = execute(self.faultyQCKT, self.backend, noise_model = self.noiseModel, shots = self.simulationShots)
 		counts = simulateJob.result().get_counts()
-
 		self.faultyDistribution = [0] * (2 ** self.circuitSize)
-		for i in counts:
-			self.faultyDistribution[int(i, 2)] = counts[i]
+		for k in counts:
+			self.faultyDistribution[int(k, 2)] = counts[k]
 		self.faultyDistribution = np.array(self.faultyDistribution / np.sum(self.faultyDistribution))
 
-		self.repetition, self.boundary = self.calRepetition(self.faultyDistribution, self.faultfreeDistribution, self.targetAlpha, self.targetBeta)
+		self.repetition, self.boundary = self.calRepetition()
 
-		self.simulatedOverkill = self.calOverkill(self.faultfreeDistribution, self.faultyDistribution)
-		self.simulatedTestescape = self.calTestEscape(self.faultyDistribution)
+		self.simulatedOverkill = self.calOverkill()
+		self.simulatedTestescape = self.calTestEscape()
 		
 		return
 
-	@staticmethod
-	def calRepetition(faultyDistribution, faultfreeDistribution, alpha, beta):
-		if faultfreeDistribution.shape != faultyDistribution.shape:
+	def calRepetition(self):
+		if self.faultfreeDistribution.shape != self.faultyDistribution.shape:
 			raise ValueError('input shape not consistency')
 
-		degreeOfFreedom = faultfreeDistribution.shape[0] - 1
-		effectSize = calEffectSize(faultyDistribution, faultfreeDistribution)
+		degreeOfFreedom = self.faultfreeDistribution.shape[0] - 1
+		effectSize = calEffectSize(self.faultyDistribution, self.faultfreeDistribution)
 		lowerBoundEffectSize = 0.8 if effectSize > 0.8 else effectSize
 
-		repetition = chi2.ppf(alpha, degreeOfFreedom) / (lowerBoundEffectSize ** 2)
+		chi2Value = chi2.ppf(self.targetAlpha, degreeOfFreedom)
+		repetition = ceil(chi2Value / (lowerBoundEffectSize ** 2))
 		nonCentrality = repetition * (effectSize ** 2)
-		chi2Value = chi2.ppf(alpha, degreeOfFreedom)
-		nonChi2Value = ncx2.ppf(1 - beta, degreeOfFreedom, nonCentrality)
+		nonChi2Value = ncx2.ppf(1 - self.targetBeta, degreeOfFreedom, nonCentrality)
 		while nonChi2Value < chi2Value:
 			repetition += 1
-			nonCentrality = repetition * (effectSize ** 2)
-			chi2Value = chi2.ppf(alpha, degreeOfFreedom)
-			nonChi2Value = ncx2.ppf(1 - beta, degreeOfFreedom, nonCentrality)
+			nonCentrality += effectSize ** 2
+			nonChi2Value = ncx2.ppf(1 - self.targetBeta, degreeOfFreedom, nonCentrality)
 		
 		boundary = (nonChi2Value * 0.3 + chi2Value * 0.7)
 		if repetition >= INT_MAX or repetition <= 0:
-			return INT_MAX
+			raise ValueError("Error occured calculating repetition")
 		
-		return ceil(repetition), boundary
+		return repetition, boundary
 
-	def calOverkill(self, faultfreeDistribution, faultyDistribution):
+	def calOverkill(self):
 		overkill = 0
-		expectedDistribution = faultfreeDistribution * self.repetition
-		observedDistribution = faultyDistribution
-		chiValue = self.boundary
+		expectedDistribution = self.faultyDistribution
+		observedDistribution = self.faultfreeDistribution
 
 		for _ in range(self.testSampleTime):
 			sampledData = random.choices(range(observedDistribution.shape[0]), weights = observedDistribution, k = self.repetition)
-			observedDistribution = np.zeros(observedDistribution.shape[0])
+			sampledObservedDistribution = np.zeros(observedDistribution.shape[0])
 			for d in sampledData:
-				observedDistribution[d] += 1
+				sampledObservedDistribution[d] += 1
+			sampledObservedDistribution = sampledObservedDistribution / self.repetition
 
-			deltaSquare = np.square(expectedDistribution - observedDistribution)
-			chiStatistic = np.sum(deltaSquare/(expectedDistribution+INT_MIN))
-			if chiStatistic <= chiValue:
+			deltaSquare = np.square(expectedDistribution - sampledObservedDistribution)
+			chiStatistic = self.repetition * np.sum(deltaSquare/(expectedDistribution+INT_MIN))
+
+			# test should pass, chiStatistic should > boundary
+			if chiStatistic <= self.boundary:
 				overkill += 1
+
 		return overkill / self.testSampleTime
 
-	def calTestEscape(self, faultyDistribution):
-		testEscape = 0			
-		expectedDistribution = faultyDistribution * self.repetition
-		chiValue = self.boundary
+	def calTestEscape(self):
+		testEscape = 0
+		expectedDistribution = self.faultyDistribution
+		observedDistribution = self.faultyDistribution
 
 		for _ in range(self.testSampleTime):
-			sampledData = random.choices(range(faultyDistribution.shape[0]), weights = faultyDistribution, k = self.repetition)
-			observedDistribution = np.zeros(faultyDistribution.shape[0])
+			sampledData = random.choices(range(observedDistribution.shape[0]), weights = observedDistribution, k = self.repetition)
+			sampledObservedDistribution = np.zeros(observedDistribution.shape[0])
 			for d in sampledData:
-				observedDistribution[d] += 1
+				sampledObservedDistribution[d] += 1
+			sampledObservedDistribution = sampledObservedDistribution / self.repetition
 
-			deltaSquare = np.square(expectedDistribution - observedDistribution)
-			chiStatistic = np.sum(deltaSquare / (expectedDistribution + INT_MIN))
-			if chiStatistic > chiValue:
+			deltaSquare = np.square(expectedDistribution - sampledObservedDistribution)
+			chiStatistic = self.repetition * np.sum(deltaSquare/(expectedDistribution+INT_MIN))
+
+			# test should fail, chiStatistic should <= boundary
+			if chiStatistic > self.boundary:
 				testEscape += 1
+
 		return testEscape / self.testSampleTime
+
+	@property
+	def circuit(self):
+		return self.faultfreeQCKT
+	
