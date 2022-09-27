@@ -10,10 +10,16 @@ from qiskit.circuit.gate import Gate
 from qiskit.providers.aer.noise import NoiseModel
 from qiskit.providers.aer.noise.errors import standard_errors, ReadoutError
 
+# import sutff
+import sys
+import os.path as osp
+sys.path.append(osp.dirname(osp.abspath(__file__)))
+
 from qatgUtil import *
+
 random.seed(114514)
 
-class qatgConfiguration():
+class QATGConfiguration():
 	"""the return results of qatg is described as qatgConfiguration objects"""
 	def __init__(self, circuitSetup: dict, simulationSetup: dict, faultObject):
 		# circuitSetup: circuitSize, basisGateSet, quantumRegisterName, classicalRegisterName, circuitInitializedStates
@@ -146,7 +152,7 @@ class qatgConfiguration():
 			raise ValueError('input shape not consistency')
 
 		degreeOfFreedom = self.faultfreeDistribution.shape[0] - 1
-		effectSize = calEffectSize(self.faultyDistribution, self.faultfreeDistribution)
+		effectSize = qatgCalEffectSize(self.faultyDistribution, self.faultfreeDistribution)
 		lowerBoundEffectSize = 0.8 if effectSize > 0.8 else effectSize
 
 		chi2Value = chi2.ppf(self.targetAlpha, degreeOfFreedom)
@@ -159,7 +165,7 @@ class qatgConfiguration():
 			nonChi2Value = ncx2.ppf(1 - self.targetBeta, degreeOfFreedom, nonCentrality)
 		
 		boundary = (nonChi2Value * 0.3 + chi2Value * 0.7)
-		if repetition >= INT_MAX or repetition <= 0:
+		if repetition >= qatgINT_MAX or repetition <= 0:
 			raise ValueError("Error occured calculating repetition")
 		
 		return repetition, boundary
@@ -177,7 +183,7 @@ class qatgConfiguration():
 			sampledObservedDistribution = sampledObservedDistribution / self.repetition
 
 			deltaSquare = np.square(expectedDistribution - sampledObservedDistribution)
-			chiStatistic = self.repetition * np.sum(deltaSquare/(expectedDistribution+INT_MIN))
+			chiStatistic = self.repetition * np.sum(deltaSquare/(expectedDistribution+qatgINT_MIN))
 
 			# test should pass, chiStatistic should > boundary
 			if chiStatistic <= self.boundary:
@@ -198,7 +204,7 @@ class qatgConfiguration():
 			sampledObservedDistribution = sampledObservedDistribution / self.repetition
 
 			deltaSquare = np.square(expectedDistribution - sampledObservedDistribution)
-			chiStatistic = self.repetition * np.sum(deltaSquare/(expectedDistribution+INT_MIN))
+			chiStatistic = self.repetition * np.sum(deltaSquare/(expectedDistribution+qatgINT_MIN))
 
 			# test should fail, chiStatistic should <= boundary
 			if chiStatistic > self.boundary:

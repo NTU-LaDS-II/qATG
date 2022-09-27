@@ -2,7 +2,7 @@ import abc
 import qiskit.circuit.library as qGate
 from qiskit.circuit.gate import Gate
 
-class qatgFault(abc.ABC):
+class QATGFault(abc.ABC):
 	def __init__(self, gateType, qubits, description = None):
 		if not issubclass(gateType, Gate):
 			raise TypeError('gateType must be one of qiskit.circuit.library')

@@ -1,15 +1,21 @@
 import numpy as np
+from numbers import Number
 from copy import deepcopy
 from qiskit import transpile
 from qiskit import QuantumRegister, ClassicalRegister, QuantumCircuit
 from qiskit.circuit import Parameter
 import qiskit.circuit.library as qGate
 
-from qatgFault import qatgFault
-from qatgUtil import *
-from qatgConfiguration import qatgConfiguration
+# import stuff
+import sys
+import os.path as osp
+sys.path.append(osp.dirname(osp.abspath(__file__)))
 
-class qatg():
+from qatgFault import QATGFault
+from qatgUtil import *
+from qatgConfiguration import QATGConfiguration
+
+class QATG():
 	"""qatg main class"""
 	def __init__(self, \
 			circuitSize: int, basisGateSet: list[qGate], circuitInitializedStates: dict, \
@@ -20,7 +26,8 @@ class qatg():
 			oneQubitErrorProb = 0.001, twoQubitErrorProb = 0.1, \
 			zeroReadoutErrorProb = [0.985, 0.015], oneReadoutErrorProb = [0.015, 0.985], \
 			targetAlpha: float = 0.99, targetBeta: float = 0.999, \
-			simulationShots: int = 200000, testSampleTime: int = 10000):
+			simulationShots: int = 200000, testSampleTime: int = 10000, \
+			verbose: bool = False):
 		# init + config setup
 		if not isinstance(circuitSize, int):
 			raise TypeError('circuitSize must be int')
@@ -73,18 +80,20 @@ class qatg():
 		self.simulationSetup['simulationShots'] = simulationShots
 		self.simulationSetup['testSampleTime'] = testSampleTime
 
+		self.verbosePrint = print if verbose else lambda *a, **k: None
+
 		return
 
 	def createTestConfiguration(self, faultList, simulateConfiguration: bool = True):
 		# simulateConfiguration: True, simulate the configuration and generate test repetition
 		# false: don't simulate and repetition = NaN
 
-		configurationList = [qatgConfiguration(self.circuitSetup, self.simulationSetup, fault) for fault in faultList]
+		configurationList = [QATGConfiguration(self.circuitSetup, self.simulationSetup, fault) for fault in faultList]
 
 		for k in range(len(faultList)):
 			fault = faultList[k]
-			if not issubclass(type(fault), qatgFault):
-				raise TypeError(f"{fault} should be subclass of qatgFault")
+			if not issubclass(type(fault), QATGFault):
+				raise TypeError(f"{fault} should be subclass of QATGFault")
 			initialState = self.circuitInitializedStates[len(fault.getQubits())]
 			template, effectSize = self.generateTestTemplate(faultObject = fault, initialState = initialState)
 			configurationList[k].setTemplate(template, effectSize)
@@ -105,8 +114,9 @@ class qatg():
 		for _ in range(self.maxTestTemplateSize):
 			newElement, faultyQuantumState, faultfreeQuantumState = self.findNewElement(faultObject, faultyQuantumState, faultfreeQuantumState)
 			templateGateList += newElement
-			effectSize = calEffectSize(faultyQuantumState, faultfreeQuantumState)
-			print(effectSize)
+			effectSize = qatgCalEffectSize(faultyQuantumState, faultfreeQuantumState)
+			self.verbosePrint(f"Current effect size: {effectSize}")
+			self.verbosePrint("")
 			if effectSize > self.minRequiredEffectSize:
 				break
 
@@ -143,7 +153,7 @@ class qatg():
 		def score(parameterSet):
 			# parameterSet: [list of first U, list of second U, ...]
 			faultfreeActivation, faultyActivation = parameterSet2ActivationMatrix(parameterSet)
-			return vectorDistance(
+			return qatgVectorDistance(
 				np.dot(np.matmul(originalGateMatrix, faultfreeActivation), faultfreeQuantumState), 
 				np.dot(np.matmul(faultyGateMatrix, faultyActivation), faultyQuantumState))
 
@@ -159,7 +169,7 @@ class qatg():
 						optimalParameterSet[k] = [theta, phi, lam]
 						results.append([[theta, phi, lam], score(optimalParameterSet)])
 			optimalParameterSet[k] = max(results, key = lambda x: x[1])[0]
-		print(f"Before: {score(optimalParameterSet)}")
+		self.verbosePrint(f"GS Parameter Score: {score(optimalParameterSet)}")
 
 		# gradient
 		for k in range(self.gradientDescentMaxIteration):
@@ -186,14 +196,16 @@ class qatg():
 					for n in range(3):
 						x[m][n] += t * dx[m][n]
 				return x
+			step = self.gradientDescentStep if isinstance(self.gradientDescentStep, Number) else self.gradientDescentStep(optimalParameterSet, score)
+			# experimental feature
 			tempParameterSet = addDelta(optimalParameterSet, self.gradientDescentStep, deltaParameterSet)
 			if(score(tempParameterSet) < currentOptimalScore):
 				break
 			optimalParameterSet = deepcopy(tempParameterSet)
-			# print(score(optimalParameterSet))
 
-		print(f"After : {score(optimalParameterSet)}")
-		print(k)
+		self.verbosePrint(f"GD Parameter Score: {score(optimalParameterSet)}")
+		self.verbosePrint(f"GD Step: {k}")
+		self.verbosePrint(f"Current ParamterSet: {optimalParameterSet}")
 
 		# 2. transpile, append
 		# construct faultfree template element
