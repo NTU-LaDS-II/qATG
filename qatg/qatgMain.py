@@ -22,7 +22,7 @@ class QATG():
 			quantumRegisterName: str = 'q', classicalRegisterName: str = 'c', \
 			gridSlice: int = 11, gradientDescentMaxIteration: int = 1000, \
 			gradientDescentStep: float = 0.2, gradientMeasureStep: float = 0.0001, gradientDeltaThreshold: float = 1e-8, \
-			maxTestTemplateSize: int = 50, minRequiredEffectSize: float = 3, \
+		     	maxTestTemplateSize: int = 50, minRequiredEffectSize: float = 0.4,\ #change 3 to 0.4 LEE
 			oneQubitErrorProb = 0.001, twoQubitErrorProb = 0.1, \
 			zeroReadoutErrorProb = [0.985, 0.015], oneReadoutErrorProb = [0.015, 0.985], \
 			targetAlpha: float = 0.99, targetBeta: float = 0.999, \
@@ -117,7 +117,7 @@ class QATG():
 			effectSize = qatgCalEffectSize(faultyQuantumState, faultfreeQuantumState)
 			self.verbosePrint(f"Current effect size: {effectSize}")
 			self.verbosePrint("")
-			if effectSize > self.minRequiredEffectSize:
+			if effectSize < self.minRequiredEffectSize: # > to < LEE
 				break
 
 		return templateGateList, effectSize
