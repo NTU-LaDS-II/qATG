@@ -152,7 +152,8 @@ class QATGConfiguration():
 			raise ValueError('input shape not consistency')
 
 		degreeOfFreedom = self.faultfreeDistribution.shape[0] - 1
-		effectSize = qatgCalEffectSize(self.faultyDistribution, self.faultfreeDistribution)
+		# effectSize = qatgCalEffectSize(self.faultyDistribution, self.faultfreeDistribution)
+		effectSize = qatgCalEffectSize1(self.faultyDistribution, self.faultfreeDistribution) # qatgCalEffectSize to qatgCalEffectSize1
 		lowerBoundEffectSize = 0.8 if effectSize > 0.8 else effectSize
 
 		chi2Value = chi2.ppf(self.targetAlpha, degreeOfFreedom)
