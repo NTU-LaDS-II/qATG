@@ -28,7 +28,7 @@ def qatgToProbability(probability):
 	# return np.array([np.abs(prob) for prob in probability], dtype = float)
 	return np.square(np.abs(probability))
 
-def qatgCalEffectSize1(faultyQuantumState, faultfreeQuantumState):
+def qatgCalEffectSize(faultyQuantumState, faultfreeQuantumState):
 	# deltaSquare = np.square(faultyQuantumState - faultfreeQuantumState)
 	# effect size might be complex TODO
 	deltaSquare = np.square(np.abs(faultyQuantumState - faultfreeQuantumState))
@@ -37,10 +37,10 @@ def qatgCalEffectSize1(faultyQuantumState, faultfreeQuantumState):
 	if effectSize < 0.1: # why? TODO
 		effectSize = 0.1
 	return effectSize
-def qatgCalEffectSize(faultyQuantumState, faultfreeQuantumState): #LEE
+def qatgOnestateFidelity(faultyQuantumState, faultfreeQuantumState): #LEE
 	# deltaSquare = np.square(faultyQuantumState - faultfreeQuantumState)
 	# effect size might be complex TODO
 	#print((Statevector(faultfreeQuantumState)))
-	effectSize = state_fidelity(Statevector(faultfreeQuantumState),Statevector(faultyQuantumState),validate=True)
+	stateFidelity = state_fidelity(Statevector(faultfreeQuantumState),Statevector(faultyQuantumState),validate=True)
 	#print(effectSize)
-	return effectSize
+	return stateFidelity
