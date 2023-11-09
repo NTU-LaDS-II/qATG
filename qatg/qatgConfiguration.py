@@ -58,7 +58,7 @@ class QATGConfiguration():
 		self.simulatedOverkill = np.nan
 		self.simulatedTestescape = np.nan
 		self.cktDepth = np.nan
-		self.effectSize = np.nan
+		self.OnestateFidelity = np.nan
 
 		self.noiseModel = self.getNoiseModel()
 
@@ -69,7 +69,7 @@ class QATGConfiguration():
 		rt += "\tRepetition: " + str(self.repetition)
 		rt += "\tCost: " + str(self.cktDepth * self.repetition) + "\n"
 		rt += "Chi-Value boundary: " + str(self.boundary) + "\n"
-		rt += "Effect Size: " + str(self.effectSize) + "\n"
+		rt += "State Fidelity: " + str(self.OnestateFidelity) + "\n"
 		rt += "Overkill: "+ str(self.simulatedOverkill)
 		rt += "\tTest Escape: " + str(self.simulatedTestescape) + "\n"
 		# rt += "Circuit: \n" + str(self.faultfreeQCKT)
@@ -90,9 +90,9 @@ class QATGConfiguration():
 
 		return noiseModel
 
-	def setTemplate(self, template, effectSize):
+	def setTemplate(self, template, OnestateFidelity):
 		# template itself is faultfree
-		self.effectSize = effectSize
+		self.OnestateFidelity = OnestateFidelity
 
 		qbIndexes = self.faultObject.getQubits()
 
@@ -152,8 +152,9 @@ class QATGConfiguration():
 			raise ValueError('input shape not consistency')
 
 		degreeOfFreedom = self.faultfreeDistribution.shape[0] - 1
-		# effectSize = qatgCalEffectSize(self.faultyDistribution, self.faultfreeDistribution)
-		effectSize = qatgCalEffectSize1(self.faultyDistribution, self.faultfreeDistribution) # qatgCalEffectSize to qatgCalEffectSize1
+
+		effectSize = qatgCalEffectSize(self.faultyDistribution, self.faultfreeDistribution)
+		
 		lowerBoundEffectSize = 0.8 if effectSize > 0.8 else effectSize
 
 		chi2Value = chi2.ppf(self.targetAlpha, degreeOfFreedom)

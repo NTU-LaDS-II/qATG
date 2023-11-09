@@ -39,10 +39,11 @@ def qatgCalEffectSize1(faultyQuantumState, faultfreeQuantumState):
 		effectSize = 0.1
 	return effectSize
 
-def qatgCalEffectSize(faultyQuantumState, faultfreeQuantumState): #LEE
+def qatgOnestateFidelity(faultyQuantumState, faultfreeQuantumState): #LEE
 	# deltaSquare = np.square(faultyQuantumState - faultfreeQuantumState)
 	# effect size might be complex TODO
 	#print((Statevector(faultfreeQuantumState)))
-	effectSize = state_fidelity(Statevector(faultfreeQuantumState),Statevector(faultyQuantumState),validate=True)
+	stateFidelity = state_fidelity(Statevector(faultfreeQuantumState),Statevector(faultyQuantumState),validate=True)
 	#print(effectSize)
-	return effectSize
+	return stateFidelity
+

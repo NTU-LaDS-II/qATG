@@ -22,13 +22,16 @@ class QATG():
 			quantumRegisterName: str = 'q', classicalRegisterName: str = 'c', \
 			gridSlice: int = 11, gradientDescentMaxIteration: int = 1000, \
 			gradientDescentStep: float = 0.2, gradientMeasureStep: float = 0.0001, gradientDeltaThreshold: float = 1e-8, \
-		     	maxTestTemplateSize: int = 50, minRequiredEffectSize: float = 0.4,\ #change 3 to 0.4 LEE
+
+		  maxTestTemplateSize: int = 50, minRequiredEffectSize: float = 0.4,\ #change 3 to 0.4 LEE
+
 			oneQubitErrorProb = 0.001, twoQubitErrorProb = 0.1, \
 			zeroReadoutErrorProb = [0.985, 0.015], oneReadoutErrorProb = [0.015, 0.985], \
 			targetAlpha: float = 0.99, targetBeta: float = 0.999, \
 			simulationShots: int = 200000, testSampleTime: int = 10000, \
 			verbose: bool = False):
 		# init + config setup
+  		#change 3 to 0.4 LEE
 		if not isinstance(circuitSize, int):
 			raise TypeError('circuitSize must be int')
 		if circuitSize <= 0:
@@ -58,7 +61,7 @@ class QATG():
 		self.gradientMeasureStep = gradientMeasureStep # suggest not too big
 		self.gradientDeltaThreshold = gradientDeltaThreshold
 		self.maxTestTemplateSize = maxTestTemplateSize
-		self.minRequiredEffectSize = minRequiredEffectSize
+		self.minRequiredStateFidelity = minRequiredStateFidelity
 		
 		q = QuantumCircuit(1)
 		self.qiskitParameterTheta = Parameter('theta')
@@ -95,8 +98,8 @@ class QATG():
 			if not issubclass(type(fault), QATGFault):
 				raise TypeError(f"{fault} should be subclass of QATGFault")
 			initialState = self.circuitInitializedStates[len(fault.getQubits())]
-			template, effectSize = self.generateTestTemplate(faultObject = fault, initialState = initialState)
-			configurationList[k].setTemplate(template, effectSize)
+			template, OnestateFidelity = self.generateTestTemplate(faultObject = fault, initialState = initialState)
+			configurationList[k].setTemplate(template, OnestateFidelity)
 			if simulateConfiguration:
 				configurationList[k].simulate()
 
@@ -114,13 +117,14 @@ class QATG():
 		for _ in range(self.maxTestTemplateSize):
 			newElement, faultyQuantumState, faultfreeQuantumState = self.findNewElement(faultObject, faultyQuantumState, faultfreeQuantumState)
 			templateGateList += newElement
-			effectSize = qatgCalEffectSize(faultyQuantumState, faultfreeQuantumState)
-			self.verbosePrint(f"Current effect size: {effectSize}")
+			OnestateFidelity = qatgOnestateFidelity(faultyQuantumState, faultfreeQuantumState)
+			self.verbosePrint(f"Current state Fidelity: {OnestateFidelity}")
 			self.verbosePrint("")
-			if effectSize < self.minRequiredEffectSize: # > to < LEE
+			if OnestateFidelity < self.minRequiredStateFidelity: # > to < LEE
+
 				break
 
-		return templateGateList, effectSize
+		return templateGateList, OnestateFidelity
 
 	def findNewElement(self, faultObject, faultyQuantumState, faultfreeQuantumState):
 		# find new element
@@ -153,7 +157,7 @@ class QATG():
 		def score(parameterSet):
 			# parameterSet: [list of first U, list of second U, ...]
 			faultfreeActivation, faultyActivation = parameterSet2ActivationMatrix(parameterSet)
-			return qatgVectorDistance(
+			return qatgOnestateFidelity(
 				np.dot(np.matmul(originalGateMatrix, faultfreeActivation), faultfreeQuantumState), 
 				np.dot(np.matmul(faultyGateMatrix, faultyActivation), faultyQuantumState))
 
@@ -168,7 +172,7 @@ class QATG():
 					for lam in np.linspace(-np.pi, np.pi, num=self.gridSlice, endpoint = True):
 						optimalParameterSet[k] = [theta, phi, lam]
 						results.append([[theta, phi, lam], score(optimalParameterSet)])
-			optimalParameterSet[k] = max(results, key = lambda x: x[1])[0]
+			optimalParameterSet[k] = min(results, key = lambda x: x[1])[0]
 		self.verbosePrint(f"GS Parameter Score: {score(optimalParameterSet)}")
 
 		# gradient
@@ -199,7 +203,7 @@ class QATG():
 			step = self.gradientDescentStep if isinstance(self.gradientDescentStep, Number) else self.gradientDescentStep(optimalParameterSet, score)
 			# experimental feature
 			tempParameterSet = addDelta(optimalParameterSet, self.gradientDescentStep, deltaParameterSet)
-			if(score(tempParameterSet) < currentOptimalScore):
+			if(score(tempParameterSet) > currentOptimalScore):
 				break
 			optimalParameterSet = deepcopy(tempParameterSet)
 

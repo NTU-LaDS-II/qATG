@@ -2,8 +2,8 @@ import numpy as np
 import qiskit.circuit.library as qGate
 from qiskit.extensions import UnitaryGate
 
-from ..qatg import QATG
-from ..qatg import QATGFault
+from qatg import QATG
+from qatg import QATGFault
 
 class myCNOTFault(QATGFault):
 	def __init__(self):
@@ -19,10 +19,10 @@ class myCNOTFault(QATGFault):
 		matrix = np.matmul(matrix, np.kron(UF, np.eye(2)))
 		return UnitaryGate(matrix)
 
-generator = QATG(circuitSize = 2, basisGateSet = [qGate.UGate], circuitInitializedStates = {2: [1, 0, 0, 0]}, minRequiredEffectSize = 2)
+generator = QATG(circuitSize = 2, basisGateSet = [qGate.UGate], circuitInitializedStates = {2: [1, 0, 0, 0]}, minRequiredStateFidelity = 0.4)
 configurationList = generator.createTestConfiguration([myCNOTFault()])
 
 for configuration in configurationList:
     print(configuration)
-    configuration.circuit.draw('mpl')
-input()
+    
+
