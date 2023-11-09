@@ -22,7 +22,9 @@ class QATG():
 			quantumRegisterName: str = 'q', classicalRegisterName: str = 'c', \
 			gridSlice: int = 11, gradientDescentMaxIteration: int = 1000, \
 			gradientDescentStep: float = 0.2, gradientMeasureStep: float = 0.0001, gradientDeltaThreshold: float = 1e-8, \
-			maxTestTemplateSize: int = 50, minRequiredStateFidelity: float = 0.4,\
+
+		  maxTestTemplateSize: int = 50, minRequiredEffectSize: float = 0.4,\ #change 3 to 0.4 LEE
+
 			oneQubitErrorProb = 0.001, twoQubitErrorProb = 0.1, \
 			zeroReadoutErrorProb = [0.985, 0.015], oneReadoutErrorProb = [0.015, 0.985], \
 			targetAlpha: float = 0.99, targetBeta: float = 0.999, \
@@ -119,6 +121,7 @@ class QATG():
 			self.verbosePrint(f"Current state Fidelity: {OnestateFidelity}")
 			self.verbosePrint("")
 			if OnestateFidelity < self.minRequiredStateFidelity: # > to < LEE
+
 				break
 
 		return templateGateList, OnestateFidelity

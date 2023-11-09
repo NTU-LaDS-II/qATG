@@ -1,5 +1,6 @@
 import numpy as np
 from qiskit.quantum_info import state_fidelity,Statevector
+
 qatgINT_MIN = 1E-100
 qatgINT_MAX = 1E15
 
@@ -28,7 +29,7 @@ def qatgToProbability(probability):
 	# return np.array([np.abs(prob) for prob in probability], dtype = float)
 	return np.square(np.abs(probability))
 
-def qatgCalEffectSize(faultyQuantumState, faultfreeQuantumState):
+def qatgCalEffectSize1(faultyQuantumState, faultfreeQuantumState):
 	# deltaSquare = np.square(faultyQuantumState - faultfreeQuantumState)
 	# effect size might be complex TODO
 	deltaSquare = np.square(np.abs(faultyQuantumState - faultfreeQuantumState))
@@ -37,6 +38,7 @@ def qatgCalEffectSize(faultyQuantumState, faultfreeQuantumState):
 	if effectSize < 0.1: # why? TODO
 		effectSize = 0.1
 	return effectSize
+
 def qatgOnestateFidelity(faultyQuantumState, faultfreeQuantumState): #LEE
 	# deltaSquare = np.square(faultyQuantumState - faultfreeQuantumState)
 	# effect size might be complex TODO
@@ -44,3 +46,4 @@ def qatgOnestateFidelity(faultyQuantumState, faultfreeQuantumState): #LEE
 	stateFidelity = state_fidelity(Statevector(faultfreeQuantumState),Statevector(faultyQuantumState),validate=True)
 	#print(effectSize)
 	return stateFidelity
+
