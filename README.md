@@ -1,4 +1,4 @@
-# qATG v0.5.17
+# qATG v0.6.1
 
 ## Introduction
 This is an quantum automatic test generator. The generator generates a configuration for each user-defined fault.
