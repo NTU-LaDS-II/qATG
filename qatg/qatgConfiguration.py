@@ -114,9 +114,8 @@ class QATGConfiguration():
 			else:
 				raise TypeError(f"Unknown object \"{gates}\" in template")
 
-			for qb in qbIndexes:
-				self.faultfreeQCKT.append(qGate.Barrier(qb))
-				self.faultyQCKT.append(qGate.Barrier(qb))
+			self.faultfreeQCKT.append(qGate.Barrier(len(qbIndexes)), qbIndexes)
+			self.faultyQCKT.append(qGate.Barrier(len(qbIndexes)), qbIndexes)
 
 		self.faultfreeQCKT.measure(self.quantumRegister, self.classicalRegister)
 		self.faultyQCKT.measure(self.quantumRegister, self.classicalRegister)
