@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name='qatg',
     description='An open-source quantum automatic test generator',
-    url='https://github.com/MartianSheep/quantum-ATG',
+    url='https://github.com/NTU-LaDS-II/qATG',
     author='Chen-Hung Wu, Chin-Yang Jen, Ching-Huan Wang, Cheng-Yun Hsieh, Jiun-Yun Li, James Chien-Mo Li',
     lab_email='lads427@gmail.com',
     license='BSD 3-clause',
