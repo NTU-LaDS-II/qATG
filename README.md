@@ -158,4 +158,4 @@ At least three functions are required in the user-defined fault class.
 * Currently `qatg` only supports single-qubit gates and CNOT gate. Adding more supports is something we are working on.
 
 ## Contact
-Please contact the author Chin-Yang Jen (b08901132@ntu.edu.tw) if you have any suggest or problems.
+Please contact NTU-LaDS-II (lads427@gmail.com) if you have any suggest or problems.
