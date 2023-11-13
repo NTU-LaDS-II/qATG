@@ -13,7 +13,7 @@ class myUFault(QATGFault):
 	def createFaultyGate(self, faultfreeGate):
 		return qGate.UGate(faultfreeGate.params[0] - 0.1*np.pi, faultfreeGate.params[1], faultfreeGate.params[2]) # bias fault on theta
 
-generator = QATG(circuitSize = 1, basisGateSet = [qGate.UGate], circuitInitializedStates = {1: [1, 0]}, minRequiredEffectSize = 2)
+generator = QATG(circuitSize = 1, basisSingleQubitGateSet = [qGate.UGate], circuitInitializedStates = {1: [1, 0]}, minRequiredStateFidelity = 0.1)
 configurationList = generator.createTestConfiguration([myUFault([np.pi, np.pi, np.pi])])
 
 for configuration in configurationList:
