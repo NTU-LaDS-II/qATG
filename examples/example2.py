@@ -22,7 +22,7 @@ class myRZFault(QATGFault):
 	def createFaultyGate(self, faultfreeGate):
 		return qGate.RZGate(faultfreeGate.params[0] - 0.1*np.pi) # bias fault
 
-generator = QATG(circuitSize = 1, basisGateSet = [qGate.RXGate, qGate.RZGate], circuitInitializedStates = {1: [1, 0]}, minRequiredEffectSize = 2)
+generator = QATG(circuitSize = 1, basisSingleQubitGateSet = [qGate.RXGate, qGate.RZGate], circuitInitializedStates = {1: [1, 0]}, minRequiredStateFidelity = 0.1)
 configurationList = generator.createTestConfiguration([myRXFault(np.pi), myRZFault(np.pi)])
 
 for configuration in configurationList:

@@ -4,8 +4,8 @@ qatg.
 An open-source quantum automatic test generator.
 """
 
-__version__ = "0.6.0"
-__author__ = 'Chin-Yang Jen'
+__version__ = "0.6.1"
+__author__ = 'LaDS'
 __credits__ = 'The Laboratory of Dependable Systems (LaDS), National Taiwan University'
 
 import sys

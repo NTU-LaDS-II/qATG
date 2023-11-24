@@ -19,7 +19,7 @@ class myCNOTFault(QATGFault):
 		matrix = np.matmul(matrix, np.kron(UF, np.eye(2)))
 		return UnitaryGate(matrix)
 
-generator = QATG(circuitSize = 2, basisGateSet = [qGate.UGate], circuitInitializedStates = {2: [1, 0, 0, 0]}, minRequiredEffectSize = 2)
+generator = QATG(circuitSize = 2, basisSingleQubitGateSet = [qGate.UGate], circuitInitializedStates = {2: [1, 0, 0, 0]}, minRequiredStateFidelity = 0.1)
 configurationList = generator.createTestConfiguration([myCNOTFault()])
 
 for configuration in configurationList:
