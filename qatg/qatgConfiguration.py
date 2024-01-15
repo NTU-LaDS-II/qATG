@@ -2,14 +2,15 @@ import random
 import numpy as np
 from math import ceil
 from scipy.stats import chi2, ncx2
-from qiskit import Aer
-from qiskit import execute
+from qiskit.execute_function import execute
 from qiskit import QuantumRegister, ClassicalRegister, QuantumCircuit
+
 import qiskit.circuit.library as qGate
 from qiskit.circuit.gate import Gate
-from qiskit.providers.aer.noise import NoiseModel
-from qiskit.providers.aer.noise.errors import standard_errors, ReadoutError
 
+from qiskit_aer import AerSimulator
+from qiskit_aer.noise import NoiseModel
+from qiskit_aer.noise.errors import standard_errors, ReadoutError
 # import sutff
 import sys
 import os.path as osp
@@ -28,7 +29,7 @@ class QATGConfiguration():
 		self.basisGateSet = circuitSetup['basisGateSet']
 		self.basisGateSetString = circuitSetup['basisGateSetString']
 		self.circuitInitializedStates = circuitSetup['circuitInitializedStates']
-		self.backend = Aer.get_backend('qasm_simulator')
+		self.backend = AerSimulator()
 
 		self.oneQubitErrorProb = simulationSetup['oneQubitErrorProb']
 		self.twoQubitErrorProb = simulationSetup['twoQubitErrorProb']
