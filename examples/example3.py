@@ -17,14 +17,8 @@ class myCNOTFault(QATGFault):
 		UF = qGate.UGate(0.05*np.pi, 0.05*np.pi, 0.05*np.pi)
 		matrix = np.matmul(np.kron(np.eye(2), UF), matrix)
 		matrix = np.matmul(matrix, np.kron(UF, np.eye(2)))
-		# UnitaryGate(matrix).draw()
 		return UnitaryGate(matrix)
 
-# qc = QuantumCircuit(2)
-# faulty_cx_gate = myCNOTFault().createFaultyGate(qGate.CXGate())
-# qc.append(faulty_cx_gate, [0, 1])
-# qc.draw('mpl')
-# print(qc)
 generator = QATG(circuitSize = 2, basisSingleQubitGateSet = [qGate.UGate], circuitInitializedStates = {2: [1, 0, 0, 0]}, minRequiredStateFidelity = 0.1)
 configurationList = generator.createTestConfiguration([myCNOTFault()])
 

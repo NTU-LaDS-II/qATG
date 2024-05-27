@@ -2,11 +2,10 @@ import numpy as np
 from numbers import Number
 from copy import deepcopy
 from qiskit import transpile
-from qiskit import QuantumRegister, ClassicalRegister, QuantumCircuit
+from qiskit import QuantumCircuit
 from qiskit.circuit import Parameter
 import qiskit.circuit.library as qGate
 
-# import stuff
 import sys
 import os.path as osp
 sys.path.append(osp.dirname(osp.abspath(__file__)))

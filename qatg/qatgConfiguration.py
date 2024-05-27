@@ -23,6 +23,7 @@ random.seed(114514)
 class QATGConfiguration():
 	"""the return results of qatg is described as qatgConfiguration objects"""
 	def __init__(self, circuitSetup: dict, simulationSetup: dict, faultObject):
+		# circuitSetup: circuitSize, basisGateSet, quantumRegisterName, classicalRegisterName, circuitInitializedStates
 		
 		self.circuitSize = circuitSetup['circuitSize']
 		self.basisGateSet = circuitSetup['basisGateSet']
@@ -72,6 +73,7 @@ class QATGConfiguration():
 		rt += "State Fidelity: " + str(self.OnestateFidelity) + "\n"
 		rt += "Overkill: "+ str(self.simulatedOverkill)
 		rt += "\tTest Escape: " + str(self.simulatedTestescape) + "\n"
+		# rt += "Circuit: \n" + str(self.faultfreeQCKT)
 
 		return rt
 
