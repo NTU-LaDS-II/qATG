@@ -2,7 +2,6 @@ import random
 import numpy as np
 from math import ceil
 from scipy.stats import chi2, ncx2
-# from qiskit.execute_function import execute
 from qiskit import QuantumRegister, ClassicalRegister, QuantumCircuit
 
 import qiskit.circuit.library as qGate
@@ -12,7 +11,7 @@ from qiskit import transpile
 from qiskit_aer import AerSimulator
 from qiskit_aer.noise import NoiseModel
 from qiskit_aer.noise.errors import standard_errors, ReadoutError
-# import sutff
+
 import sys
 import os.path as osp
 sys.path.append(osp.dirname(osp.abspath(__file__)))
@@ -24,7 +23,6 @@ random.seed(114514)
 class QATGConfiguration():
 	"""the return results of qatg is described as qatgConfiguration objects"""
 	def __init__(self, circuitSetup: dict, simulationSetup: dict, faultObject):
-		# circuitSetup: circuitSize, basisGateSet, quantumRegisterName, classicalRegisterName, circuitInitializedStates
 		
 		self.circuitSize = circuitSetup['circuitSize']
 		self.basisGateSet = circuitSetup['basisGateSet']
@@ -74,7 +72,6 @@ class QATGConfiguration():
 		rt += "State Fidelity: " + str(self.OnestateFidelity) + "\n"
 		rt += "Overkill: "+ str(self.simulatedOverkill)
 		rt += "\tTest Escape: " + str(self.simulatedTestescape) + "\n"
-		# rt += "Circuit: \n" + str(self.faultfreeQCKT)
 
 		return rt
 
