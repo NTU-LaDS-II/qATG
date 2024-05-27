@@ -2,11 +2,10 @@ import numpy as np
 from numbers import Number
 from copy import deepcopy
 from qiskit import transpile
-from qiskit import QuantumRegister, ClassicalRegister, QuantumCircuit
+from qiskit import QuantumCircuit
 from qiskit.circuit import Parameter
 import qiskit.circuit.library as qGate
 
-# import stuff
 import sys
 import os.path as osp
 sys.path.append(osp.dirname(osp.abspath(__file__)))
@@ -235,7 +234,7 @@ class QATG():
 
 	def U2GateSetsTranspile(self, UParameters):
 		# to gate list directly
-		resultCircuit = self.effectiveUGateCircuit.bind_parameters({ \
+		resultCircuit = self.effectiveUGateCircuit.assign_parameters({ \
 			self.qiskitParameterTheta: UParameters[0], \
 			self.qiskitParameterPhi: UParameters[1], \
 			self.qiskitParameterLambda: UParameters[2]})

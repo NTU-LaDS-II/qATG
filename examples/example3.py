@@ -1,7 +1,7 @@
 import numpy as np
 import qiskit.circuit.library as qGate
-from qiskit.extensions import UnitaryGate
-
+from qiskit.circuit.library import UnitaryGate
+from qiskit import QuantumCircuit
 from qatg import QATG
 from qatg import QATGFault
 
@@ -21,6 +21,7 @@ class myCNOTFault(QATGFault):
 
 generator = QATG(circuitSize = 2, basisSingleQubitGateSet = [qGate.UGate], circuitInitializedStates = {2: [1, 0, 0, 0]}, minRequiredStateFidelity = 0.1)
 configurationList = generator.createTestConfiguration([myCNOTFault()])
+
 
 for configuration in configurationList:
     print(configuration)
