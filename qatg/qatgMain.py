@@ -235,7 +235,7 @@ class QATG():
 
 	def U2GateSetsTranspile(self, UParameters):
 		# to gate list directly
-		resultCircuit = self.effectiveUGateCircuit.bind_parameters({ \
+		resultCircuit = self.effectiveUGateCircuit.assign_parameters({ \
 			self.qiskitParameterTheta: UParameters[0], \
 			self.qiskitParameterPhi: UParameters[1], \
 			self.qiskitParameterLambda: UParameters[2]})

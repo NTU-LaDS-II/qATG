@@ -2,14 +2,15 @@ import random
 import numpy as np
 from math import ceil
 from scipy.stats import chi2, ncx2
-from qiskit import Aer
-from qiskit import execute
+from qiskit import transpile
 from qiskit import QuantumRegister, ClassicalRegister, QuantumCircuit
+
 import qiskit.circuit.library as qGate
 from qiskit.circuit.gate import Gate
-from qiskit.providers.aer.noise import NoiseModel
-from qiskit.providers.aer.noise.errors import standard_errors, ReadoutError
 
+from qiskit_aer import AerSimulator
+from qiskit_aer.noise import NoiseModel
+from qiskit_aer.noise.errors import standard_errors, ReadoutError
 # import sutff
 import sys
 import os.path as osp
@@ -28,7 +29,7 @@ class QATGConfiguration():
 		self.basisGateSet = circuitSetup['basisGateSet']
 		self.basisGateSetString = circuitSetup['basisGateSetString']
 		self.circuitInitializedStates = circuitSetup['circuitInitializedStates']
-		self.backend = Aer.get_backend('qasm_simulator')
+		self.backend = AerSimulator()
 
 		self.oneQubitErrorProb = simulationSetup['oneQubitErrorProb']
 		self.twoQubitErrorProb = simulationSetup['twoQubitErrorProb']
@@ -125,14 +126,22 @@ class QATGConfiguration():
 		return
 
 	def simulate(self):
-		simulateJob = execute(self.faultfreeQCKT, self.backend, noise_model = self.noiseModel, shots = self.simulationShots)
+		new_circuit = transpile(self.faultfreeQCKT, self.backend)
+		simulateJob = self.backend.run(new_circuit, noise_model = self.noiseModel, shots = self.simulationShots)
+		new_circuit.draw()
+		print(new_circuit)
+		# simulateJob = execute(self.faultfreeQCKT, self.backend, noise_model = self.noiseModel, shots = self.simulationShots)
 		counts = simulateJob.result().get_counts()
 		self.faultfreeDistribution = [0] * (2 ** self.circuitSize)
 		for k in counts:
 			self.faultfreeDistribution[int(k, 2)] = counts[k]
 		self.faultfreeDistribution = np.array(self.faultfreeDistribution / np.sum(self.faultfreeDistribution))
 
-		simulateJob = execute(self.faultyQCKT, self.backend, noise_model = self.noiseModel, shots = self.simulationShots)
+		new_circuit = transpile(self.faultfreeQCKT, self.backend)
+		simulateJob = self.backend.run(new_circuit, noise_model = self.noiseModel, shots = self.simulationShots)
+		new_circuit.draw()
+		print(new_circuit)
+		# simulateJob = execute(self.faultyQCKT, self.backend, noise_model = self.noiseModel, shots = self.simulationShots)
 		counts = simulateJob.result().get_counts()
 		self.faultyDistribution = [0] * (2 ** self.circuitSize)
 		for k in counts:

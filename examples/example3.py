@@ -1,6 +1,6 @@
 import numpy as np
 import qiskit.circuit.library as qGate
-from qiskit.extensions import UnitaryGate
+from qiskit.circuit.library import UnitaryGate
 
 from qatg import QATG
 from qatg import QATGFault
