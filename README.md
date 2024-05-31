@@ -8,7 +8,8 @@ Note that qATG assumes different faults for different qubits, and one consistent
 
 
 ## Installation
-`pip install qatg`
+At the root of cloned directory.
+`pip install -e .`
 And then pip will handle the rest.
 
 ## Examples
