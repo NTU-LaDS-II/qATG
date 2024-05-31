@@ -1,0 +1,9 @@
+# Python compile files
+*.pyc
+qatg.egg-info/
+
+# VSCode configuration files and folders
+.vscode
+
+# Mac configuration files and folders
+.DS_Store
