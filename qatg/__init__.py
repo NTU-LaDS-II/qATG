@@ -1,7 +1,7 @@
 """
 qatg.
 
-An open-source quantum automatic test generator.
+An open-source quantum automatic test generator, compatible with Qiskit.
 """
 
 __version__ = "0.6.1"
