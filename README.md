@@ -1,4 +1,4 @@
-# qATG v0.8.0
+# qATG v0.8.1
 
 ## Introduction
 
@@ -9,19 +9,34 @@ Note that qATG assumes different faults for different qubits, and one consistent
 
 ## Installation
 
-Installing from pip server, execute:
+### Install via PIP
+
+Installing from the pypi server, execute:
 
 ```bash
 pip install qatg==0.8
 ```
 
+#### Local Install via PIP
+
 Or, installing from Github repository, at the root of cloned directory, execute:
 
 ```bash
+git clone https://github.com/NTU-LaDS-II/qATG.git
+cd qatg
 pip install -e .
 ```
 
 And then pip will handle the rest.
+
+### Run In Docker
+
+If you only want to install the library in a containerized environment, try run:
+
+```bash
+docker pull ntuladsii/qatg
+docker run -it --rm ntuladsii/qatg
+```
 
 ## Examples
 
