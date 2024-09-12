@@ -19,11 +19,16 @@ pip install qatg==0.8
 
 #### Local Install via PIP
 
-Or, installing from Github repository, at the root of cloned directory, execute:
+Or, installing from Github repository,
 
 ```bash
 git clone https://github.com/NTU-LaDS-II/qATG.git
 cd qatg
+```
+
+at the root of cloned directory, execute:
+
+```bash
 pip install -e .
 ```
 
