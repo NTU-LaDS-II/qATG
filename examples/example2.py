@@ -27,5 +27,5 @@ configurationList = generator.createTestConfiguration([myRXFault(np.pi), myRZFau
 
 for configuration in configurationList:
     print(configuration)
-    configuration.circuit.draw('mpl')
+    print(configuration.circuit)
 input()

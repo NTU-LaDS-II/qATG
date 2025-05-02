@@ -25,5 +25,5 @@ configurationList = generator.createTestConfiguration([myCNOTFault()])
 
 for configuration in configurationList:
     print(configuration)
-    configuration.circuit.draw('mpl')
+    print(configuration.circuit)
 input()

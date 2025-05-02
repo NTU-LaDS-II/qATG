@@ -9,8 +9,8 @@ setup(
 	maintainer='NTU-LADS-II',
     license='BSD 3-clause',
     packages=['qatg'],
-    install_requires=['qiskit==1.0.2',
-					  'qiskit-aer==0.14.1', #https://github.com/Qiskit/qiskit-aer/issues/2007
+    install_requires=['qiskit>=1.0.2',
+					  'qiskit-aer>=0.14.1', #https://github.com/Qiskit/qiskit-aer/issues/2007
 					  'pylatexenc>=2.10',
 					  'scipy>=1.7.1',
                       'ipympl>=0.9.2',
