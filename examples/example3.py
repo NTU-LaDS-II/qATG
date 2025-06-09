@@ -1,7 +1,7 @@
 import numpy as np
 import qiskit.circuit.library as qGate
 from qiskit.circuit.library import UnitaryGate
-from qiskit import QuantumCircuit
+
 from qatg import QATG
 from qatg import QATGFault
 

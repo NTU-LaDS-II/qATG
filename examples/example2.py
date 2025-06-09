@@ -1,5 +1,6 @@
 import numpy as np
 import qiskit.circuit.library as qGate
+from qiskit import qasm3
 
 from qatg import QATG
 from qatg import QATGFault
@@ -25,7 +26,8 @@ class myRZFault(QATGFault):
 generator = QATG(circuitSize = 1, basisSingleQubitGateSet = [qGate.RXGate, qGate.RZGate], circuitInitializedStates = {1: [1, 0]}, minRequiredStateFidelity = 0.1)
 configurationList = generator.createTestConfiguration([myRXFault(np.pi), myRZFault(np.pi)])
 
-for configuration in configurationList:
+for idx, configuration in enumerate(configurationList):
     print(configuration)
-    print(configuration.circuit)
+    with open(f'my_fault{idx+1}.qasm', 'w') as f:
+    	qasm3.dump(configuration.circuit, f)
 input()

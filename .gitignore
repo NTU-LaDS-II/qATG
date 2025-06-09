@@ -7,3 +7,6 @@ qatg.egg-info/
 
 # Mac configuration files and folders
 .DS_Store
+
+# Test Configurations
+*.qasm

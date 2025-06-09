@@ -118,13 +118,12 @@ class QATG():
 			self.verbosePrint(f"Current state Fidelity: {OnestateFidelity}")
 			self.verbosePrint("")
 			if OnestateFidelity < self.minRequiredStateFidelity: # > to < LEE
-				newElement, faultyQuantumState, faultfreeQuantumState = self.findNewElement(faultObject, faultyQuantumState, faultfreeQuantumState, True)
-				templateGateList += newElement
-				OnestateFidelity = qatgOnestateFidelity(faultyQuantumState, faultfreeQuantumState)
-				self.verbosePrint(f"Current state Fidelity: {OnestateFidelity}")
-				self.verbosePrint("")
 				break
-
+		newElement, faultyQuantumState, faultfreeQuantumState = self.findNewElement(faultObject, faultyQuantumState, faultfreeQuantumState, True)
+		templateGateList += newElement
+		OnestateFidelity = qatgOnestateFidelity(faultyQuantumState, faultfreeQuantumState)
+		self.verbosePrint(f"Final state Fidelity: {OnestateFidelity}")
+		self.verbosePrint("")
 		return templateGateList, OnestateFidelity
 
 	def findNewElement(self, faultObject, faultyQuantumState, faultfreeQuantumState, finalIteration = False):
@@ -239,7 +238,8 @@ class QATG():
 			self.qiskitParameterPhi: UParameters[1], \
 			self.qiskitParameterLambda: UParameters[2]})
 		for cktInstruction in resultCircuit.data:
-			cktInstruction.operation.params = [qatgWrapToPi(float(param)) for param in cktInstruction.operation.params]
+			if (cktInstruction.operation.mutable): # Ignore immutable gates
+				cktInstruction.operation.params = [qatgWrapToPi(float(param)) for param in cktInstruction.operation.params]
 		return [cktInstruction.operation for cktInstruction in resultCircuit.data]
 		# return [gate for gate, _, _ in resultCircuit.data] # old version of qiskit
 		# potential bug: parameters might have something such as "3pi"

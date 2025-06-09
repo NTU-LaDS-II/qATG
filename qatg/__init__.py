@@ -4,7 +4,7 @@ qatg.
 An open-source quantum automatic test generator, compatible with Qiskit.
 """
 
-__version__ = "0.8.2"
+__version__ = "0.8.3"
 __author__ = 'LaDS'
 __credits__ = 'The Laboratory of Dependable Systems (LaDS), National Taiwan University'
 
