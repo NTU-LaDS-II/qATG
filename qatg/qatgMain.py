@@ -102,6 +102,24 @@ class QATG():
 
 		return configurationList
 
+	def createTestConfigurationCompressed(self, faultList, simulateConfiguration: bool = True):
+		# simulateConfiguration: True, simulate the configuration and generate test repetition
+		# false: don't simulate and repetition = NaN
+
+		configurationList = [QATGConfiguration(self.circuitSetup, self.simulationSetup, faults[0]) for faults in faultList]
+
+		for k in range(len(faultList)):
+			faults = faultList[k]
+			if not issubclass(type(faults[0]), QATGFault):
+				raise TypeError(f"{faults[0]} should be subclass of QATGFault")
+			initialState = self.circuitInitializedStates[len(faults[0].getQubits())]
+			template, OnestateFidelity = self.generateTestTemplateCompressed(faultObjects = faults, initialState = initialState)
+			configurationList[k].setTemplate(template, OnestateFidelity)
+			if simulateConfiguration:
+				configurationList[k].simulate()
+
+		return configurationList
+
 	def generateTestTemplate(self, faultObject, initialState):
 		# list of "qGates"
 		# a member is either a gate (for all qubits) or a list of gate (for each qubit)
@@ -124,6 +142,36 @@ class QATG():
 		OnestateFidelity = qatgOnestateFidelity(faultyQuantumState, faultfreeQuantumState)
 		self.verbosePrint(f"Final state Fidelity: {OnestateFidelity}")
 		self.verbosePrint("")
+		return templateGateList, OnestateFidelity
+
+	def generateTestTemplateCompressed(self, faultObjects, initialState):
+		# list of "qGates"
+		# a member is either a gate (for all qubits) or a list of gate (for each qubit)
+		# one activation gate, one original/faulty gate
+		templateGateList = []
+		nfault = len(faultObjects)
+
+		faultyQuantumStates = [deepcopy(initialState) for _ in faultObjects]
+		faultfreeQuantumState = deepcopy(initialState)
+
+		OnestateFidelity = 1.
+		for _ in range(self.maxTestTemplateSize):
+			newElement, faultyQuantumStates, faultfreeQuantumState = self.findNewElementCompressed(faultObjects, faultyQuantumStates, faultfreeQuantumState)
+			templateGateList += newElement
+			OnestateFidelity_pre = OnestateFidelity
+			OnestateFidelity = np.max([qatgOnestateFidelity(faultyQuantumStates[i], faultfreeQuantumState) for i in range(nfault)])
+			self.verbosePrint(f"Current max state Fidelity: {OnestateFidelity}")
+			self.verbosePrint("")
+			if OnestateFidelity < self.minRequiredStateFidelity:
+				break
+			if OnestateFidelity > OnestateFidelity_pre:
+				self.verbosePrint('No more improvement, current faults cannot be test in a single test circuit!!!')
+				break
+		newElement, faultyQuantumStates, faultfreeQuantumState = self.findNewElementCompressed(faultObjects, faultyQuantumStates, faultfreeQuantumState, True)
+		templateGateList += newElement
+		OnestateFidelity = np.max([qatgOnestateFidelity(faultyQuantumStates[i], faultfreeQuantumState) for i in range(nfault)])
+		self.verbosePrint(f"Final state Fidelity: {OnestateFidelity}")
+
 		return templateGateList, OnestateFidelity
 
 	def findNewElement(self, faultObject, faultyQuantumState, faultfreeQuantumState, finalIteration = False):
@@ -230,6 +278,113 @@ class QATG():
 		faultyQuantumState = np.dot(np.matmul(faultyGateMatrix, faultyActivation), faultyQuantumState)
 
 		return newElement, faultyQuantumState, faultfreeQuantumState
+
+	def findNewElementCompressed(self, faultObjects, faultyQuantumStates, faultfreeQuantumState, finalIteration = False):
+		nfault = len(faultObjects)
+		originalGate = faultObjects[0].createOriginalGate()
+		faultyGateMatrixs = [faultObjects[i].createFaultyGate(originalGate).to_matrix() for i in range(nfault)]
+		originalGateMatrix = originalGate.to_matrix()
+
+		def parameterSet2ActivationMatrix(parameterSet):
+			faultfreeGateMatrixList = [qatgU3(parameter) for parameter in parameterSet] # vertical
+			# faulty: u->transpile->gate set, and then insert fault
+			faultyGateMatrixLists = [[] for _ in range(nfault)]
+			for i in range(nfault):
+				for parameter in parameterSet:
+					effectiveCktGateList = self.U2GateSetsTranspile(parameter)
+					faultyEffectiveGateMatrix = np.eye(*effectiveCktGateList[0].to_matrix().shape)
+					for gate in effectiveCktGateList:
+						if faultObjects[i].isSameGateType(gate):
+							faultyEffectiveGateMatrix = np.matmul(faultObjects[i].createFaultyGate(gate).to_matrix(), faultyEffectiveGateMatrix)
+						else:
+							faultyEffectiveGateMatrix = np.matmul(gate.to_matrix(), faultyEffectiveGateMatrix)
+					faultyGateMatrixLists[i].append(faultyEffectiveGateMatrix)
+			# kron all together
+			faultfreeActivation = np.array([1])
+			faultyActivations = [np.array([1]) for _ in range(nfault)]
+			for k in range(len(faultfreeGateMatrixList)):
+				faultfreeActivation = np.kron(faultfreeGateMatrixList[k], faultfreeActivation)
+				for i in range(nfault):
+					faultyActivations[i] = np.kron(faultyGateMatrixLists[i][k], faultyActivations[i])
+
+			return faultfreeActivation, faultyActivations
+
+		def score_zero(parameterSet):
+			faultfreeActivation, faultyActivations = parameterSet2ActivationMatrix(parameterSet)
+			z = np.zeros_like(faultfreeQuantumState)
+			z[0] = 1.
+			return state_fidelity(
+				np.dot(np.matmul(originalGateMatrix, faultfreeActivation), faultfreeQuantumState), z)
+
+		def score_state(parameterSet):
+			faultfreeActivation, faultyActivations = parameterSet2ActivationMatrix(parameterSet)
+			return np.min([1 - state_fidelity(
+				np.dot(np.matmul(originalGateMatrix, faultfreeActivation), faultfreeQuantumState),
+				np.dot(np.matmul(faultyGateMatrixs[i], faultyActivations[i]), faultyQuantumStates[i])) for i in range(nfault)])
+
+		get_score = score_zero if finalIteration else score_state
+		# 1. find best parameters
+		# grid search
+		qubitSize = len(faultObjects[0].getQubits())
+		optimalParameterSet = [[0, 0, 0] for _ in range(qubitSize)]
+		for k in range(qubitSize):
+			results = []
+			for theta in np.linspace(-np.pi, np.pi, num=self.gridSlice, endpoint = True):
+				for phi in np.linspace(-np.pi, np.pi, num=self.gridSlice, endpoint = True):
+					for lam in np.linspace(-np.pi, np.pi, num=self.gridSlice, endpoint = True):
+						optimalParameterSet[k] = [theta, phi, lam]
+						results.append([[theta, phi, lam], get_score(optimalParameterSet)])
+			optimalParameterSet[k] = max(results, key = lambda x: x[1])[0]
+		self.verbosePrint(f"GS Parameter Score: {get_score(optimalParameterSet)}")
+
+		# gradient
+		for k in range(self.gradientDescentMaxIteration):
+			deltaParameterSet = [[0, 0, 0] for _ in range(qubitSize)]
+			currentOptimalScore = get_score(optimalParameterSet)
+			tempParameterSet = deepcopy(optimalParameterSet)
+			# find gradient
+			for m in range(qubitSize):
+				for n in range(3):
+					tempParameterSet[m][n] += self.gradientMeasureStep
+					currentTempScore = get_score(tempParameterSet)
+					deltaParameterSet[m][n] = (currentTempScore - currentOptimalScore) / self.gradientMeasureStep
+					tempParameterSet[m][n] -= self.gradientMeasureStep
+			# evaluate, with 2-norm
+			deltaParameterSquare = 0
+			for m in range(len(deltaParameterSet)):
+				for n in range(3):
+					deltaParameterSquare += deltaParameterSet[m][n] ** 2
+			if deltaParameterSquare ** 0.5 < self.gradientDeltaThreshold:
+				break
+			# update
+			def addDelta(x, t, dx):
+				for m in range(len(x)):
+					for n in range(3):
+						x[m][n] += t * dx[m][n]
+				return x
+			step = self.gradientDescentStep if isinstance(self.gradientDescentStep, Number) else self.gradientDescentStep(optimalParameterSet, get_score)
+			# experimental feature
+			tempParameterSet = addDelta(optimalParameterSet, self.gradientDescentStep, deltaParameterSet)
+			if(get_score(tempParameterSet) < currentOptimalScore):
+				break
+			optimalParameterSet = deepcopy(tempParameterSet)
+
+		self.verbosePrint(f"GD Parameter Score: {get_score(optimalParameterSet)}")
+		self.verbosePrint(f"GD Step: {k}")
+		self.verbosePrint(f"Current ParamterSet: {optimalParameterSet}")
+		# 2. transpile, append
+		# construct faultfree template element
+		newElement = [self.U2GateSetsTranspile(parameter) for parameter in optimalParameterSet]
+		# iterate by qubit
+		newElement = [list(x) for x in zip(*newElement)] # transpose
+		# iterate by order
+		newElement.append(originalGate)
+
+		faultfreeActivation, faultyActivations = parameterSet2ActivationMatrix(optimalParameterSet)
+		faultfreeQuantumState = np.dot(np.matmul(originalGateMatrix, faultfreeActivation), faultfreeQuantumState)
+		faultyQuantumStates = [np.dot(np.matmul(faultyGateMatrixs[i], faultyActivations[i]), faultyQuantumStates[i]) for i in range(nfault)]
+
+		return newElement, faultyQuantumStates, faultfreeQuantumState
 
 	def U2GateSetsTranspile(self, UParameters):
 		# to gate list directly
